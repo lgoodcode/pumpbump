@@ -1,3 +1,26 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:react/recommended",
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "eqeqeq": "error",
+    // Allow explicity `any` types when needed
+    "prefer-const": "error",
+    // Ignore prop-types because we are using TypeScript
+    "react/prop-types": "off",
+    "react-hooks/exhaustive-deps": "off",
+    // Don't need React to be in scope because it is global
+    "react/react-in-jsx-scope": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    // Warn if there are unused variables and doesn't false positive on types
+    "@typescript-eslint/no-unused-vars": "warn",
+    // Allow non-null assertions when needed
+    "@typescript-eslint/no-non-null-assertion": "off",
+    "@typescript-eslint/no-empty-interface": "off",
+    "@typescript-eslint/ban-ts-comment": "off"
+  },
+  "ignorePatterns": ["node_modules", "src/types/*.ts"]
 }

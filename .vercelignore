@@ -1,0 +1,6 @@
+# Ignore these folders from the NextJS build in Vercel
+.circleci
+.github
+.vscode
+./email
+./supabase/**/*
