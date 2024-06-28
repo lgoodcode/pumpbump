@@ -1,0 +1,9 @@
+{
+  "deno.enablePaths": ["client/supabase/functions", "server"],
+  "deno.lint": true,
+  "deno.unstable": true,
+  "[deno]": {
+    "editor.defaultFormatter": "denoland.vscode-deno"
+  },
+  "deno.suggest.imports.autoDiscover": true
+}

@@ -1,6 +1,8 @@
-# PumpBump
+# PumpBump Client
 
 ## Description
+
+This is the frontend - NextJS, Supabase, and TailwindCSS client for the PumpBump project.
 
 ## Formatting
 
