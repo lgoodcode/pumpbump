@@ -1,16 +1,12 @@
 import { atom, useSetAtom } from "jotai";
-import { useGetUser } from "@/hooks/auth/use-user";
 
 export const userAtom = atom<User | null>(null);
 
 export const useAsyncUserAtom = atom(async (get) => {
-  let user = get(userAtom);
-  const getUser = useGetUser();
-
-  if (!user) {
-    user = await getUser() as User;
-  }
-  return user;
+  // Resolve a promise so that it will be async and the suspense will work
+  // as well as wait for the user to be fetched before setting the user
+  // to ensure the correct user is set
+  return Promise.resolve(get(userAtom));
 });
 
 export const useSetUserAtom = () => {

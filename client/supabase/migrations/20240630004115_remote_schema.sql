@@ -35,6 +35,7 @@ CREATE TYPE "public"."user_role" AS ENUM (
 
 ALTER TYPE "public"."user_role" OWNER TO "postgres";
 
+
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -50,6 +51,9 @@ END;
 $$;
 
 ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
+
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_user"();
+
 
 CREATE OR REPLACE FUNCTION "public"."is_admin"() RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -96,11 +100,20 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
     "username" "text" NOT NULL,
     "role" "public"."user_role" DEFAULT 'USER'::"public"."user_role" NOT NULL,
     "email" "text",
+    "active" boolean DEFAULT true NOT NULL,
     "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL
 );
 
 ALTER TABLE "public"."users" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."wallets" (
+    "id" "uuid" NOT NULL,
+    "public_key" "text" NOT NULL,
+    "secret_key" "text" NOT NULL
+);
+
+ALTER TABLE "public"."wallets" OWNER TO "postgres";
 
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_email_key" UNIQUE ("email");
@@ -111,18 +124,27 @@ ALTER TABLE ONLY "public"."users"
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_username_key" UNIQUE ("username");
 
+ALTER TABLE ONLY "public"."wallets"
+    ADD CONSTRAINT "wallets_pkey" PRIMARY KEY ("id");
+
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
-CREATE POLICY "Admins can delete users" ON "public"."users" FOR DELETE TO "authenticated" USING ("public"."is_admin"(( SELECT "auth"."uid"() AS "uid")));
-
-CREATE POLICY "Can update own data and admins can update all users data" ON "public"."users" FOR UPDATE TO "authenticated" USING (((( SELECT "auth"."uid"() AS "uid") = "id") OR "public"."is_admin"(( SELECT "auth"."uid"() AS "uid")))) WITH CHECK ((((( SELECT "auth"."uid"() AS "uid") = "id") AND ("role" = "role")) OR ( SELECT "public"."is_admin"(( SELECT "auth"."uid"() AS "uid")) AS "is_admin")));
+ALTER TABLE ONLY "public"."wallets"
+    ADD CONSTRAINT "wallets_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id");
 
 CREATE POLICY "Can view own data and admins can view all users data" ON "public"."users" FOR SELECT TO "authenticated" USING (((( SELECT "auth"."uid"() AS "uid") = "id") OR ( SELECT "public"."is_admin"(( SELECT "auth"."uid"() AS "uid")) AS "is_admin")));
 
+CREATE POLICY "Can view wallet address" ON "public"."wallets" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "id"));
+
+CREATE POLICY "Only admins can update users data" ON "public"."users" FOR UPDATE TO "authenticated" USING ("public"."is_admin"(( SELECT "auth"."uid"() AS "uid")));
+
 ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."wallets" ENABLE ROW LEVEL SECURITY;
+
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
+
 
 GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
@@ -148,6 +170,10 @@ GRANT ALL ON FUNCTION "public"."is_authenticated"() TO "service_role";
 GRANT ALL ON TABLE "public"."users" TO "anon";
 GRANT ALL ON TABLE "public"."users" TO "authenticated";
 GRANT ALL ON TABLE "public"."users" TO "service_role";
+
+GRANT ALL ON TABLE "public"."wallets" TO "anon";
+GRANT ALL ON TABLE "public"."wallets" TO "authenticated";
+GRANT ALL ON TABLE "public"."wallets" TO "service_role";
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "postgres";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "anon";

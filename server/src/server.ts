@@ -1,41 +1,29 @@
-import { load } from "dotenv";
 import { Hono } from "hono";
 
-import { logger } from "./utils/logger.ts";
-import { supabase } from "./lib/supabase/client.ts";
+import { IS_PROD } from "./constants/index.ts";
+import { logger } from "./utils/index.ts";
+import { authentication, logging, swagger } from "./lib/middleware.ts";
+import { Wallet } from "./routes/wallet.ts";
 
-const env = await load();
 const app = new Hono();
 
-app.use(async (ctx, next) => {
-  logger.info(`${ctx.req.method} - ${ctx.req.url}`);
-  await next();
-});
+app.use(logging);
+app.use(authentication);
 
-app.get("/", (ctx) => {
-  return ctx.text("Hello Hono!");
-});
+// SwaggerUI API documentation - only available in development via authMiddleware
+app.get("/docs", swagger);
 
-app.get("/test", async (ctx) => {
-  const { data, error } = await supabase.from("users").select("*");
-  if (error) {
-    return ctx.json(error, 500);
-  }
-  return ctx.json(data);
-});
-
-app.get("/error", () => {
-  logger.error("test");
-  throw new Error("test");
-});
+app.route("/wallet", Wallet);
 
 app.notFound((ctx) => {
+  logger.error(ctx.error);
   return ctx.text("Not Found", 404);
 });
 
 app.onError((error, ctx) => {
-  console.error(error);
-  return ctx.text("Internal Server Error", 500);
+  logger.error(error);
+  return ctx.text("An unexpected error occurred", 500);
 });
 
-Deno.serve({ port: parseInt(env.PORT) }, app.fetch);
+// Hard coded port since it'll be HTTPS only in production
+Deno.serve({ port: IS_PROD ? 443 : 4000 }, app.fetch);

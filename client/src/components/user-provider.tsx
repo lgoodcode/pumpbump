@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useHydrateAtoms } from 'jotai/utils';
 
 import { useRouter } from '@/components/ui/progress-bar';
-import { useClearUserAtom, userAtom } from '@/lib/atoms/user';
+import { useClearUserAtom, userAtom, useSetUserAtom } from '@/lib/atoms/user';
+import { useGetUser } from '@/hooks/auth/use-user';
 import { setSentryUser } from '@/lib/sentry/utils';
 
 interface UserProviderProps {
-  user?: User;
+  user: User;
   children: React.ReactNode;
 }
 
@@ -18,13 +19,27 @@ interface UserProviderProps {
 export function UserProvider({ user, children }: UserProviderProps) {
   const router = useRouter();
   const clearUserAtom = useClearUserAtom();
-  useHydrateAtoms([[userAtom, user ?? null]]);
+  const getUser = useGetUser();
+  const setUserAtom = useSetUserAtom();
+  useHydrateAtoms([[userAtom, user]]);
 
   if (!user) {
     router.push('/login');
   }
 
+  const rehydrateUser = useCallback(async () => {
+    const fetchedUser = await getUser();
+    if (!fetchedUser) {
+      router.push('/login');
+    }
+
+    setUserAtom(fetchedUser);
+    setSentryUser(fetchedUser);
+  }, []);
+
   useEffect(() => {
+    rehydrateUser();
+
     return () => {
       clearUserAtom();
       setSentryUser(null);

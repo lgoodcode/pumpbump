@@ -15,9 +15,7 @@ const nextConfig = {
         // If in CI, use a placeholder URL
         destination: process.env.CI
           ? '/sentry-tunnel'
-          : `https://${
-              process.env.NEXT_PUBLIC_SENTRY_DSN.split('@')[1].split('/')[0]
-            }/:path*`,
+          : `https://${process.env.NEXT_PUBLIC_SENTRY_DSN.split('@')[1].split('/')[0]}/:path*`,
       },
     ];
   },

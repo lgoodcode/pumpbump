@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Suspense } from 'react';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtomValue } from 'jotai';
 import { LogOut, User } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,10 @@ const UserNavSuspense = () => {
 const UserNavContent = () => {
   const user = useAtomValue(useAsyncUserAtom);
   const logout = useLogout();
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <DropdownMenu>

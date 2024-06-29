@@ -18,26 +18,60 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Data for Name: audit_log_entries; Type: TABLE DATA; Schema: auth; Owner: supabase_auth_admin
+--
+
+INSERT INTO "auth"."audit_log_entries" ("instance_id", "id", "payload", "created_at", "ip_address") VALUES
+	('00000000-0000-0000-0000-000000000000', '30fd2287-de23-4209-9ade-5eda1fb2dfaa', '{"action":"user_signedup","actor_id":"d88945cc-10ac-40b5-bb25-ee58b3575ce4","actor_username":"cryptobumper42@fakemail.com","actor_via_sso":false,"log_type":"team","traits":{"provider":"email"}}', '2024-06-30 02:29:11.459236+00', ''),
+	('00000000-0000-0000-0000-000000000000', '5d873ec1-b275-47f1-9758-c12fad0479c9', '{"action":"login","actor_id":"d88945cc-10ac-40b5-bb25-ee58b3575ce4","actor_username":"cryptobumper42@fakemail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}', '2024-06-30 02:29:11.463704+00', ''),
+	('00000000-0000-0000-0000-000000000000', '39844117-14fc-43cc-8e85-d7fafff0c489', '{"action":"logout","actor_id":"d88945cc-10ac-40b5-bb25-ee58b3575ce4","actor_username":"cryptobumper42@fakemail.com","actor_via_sso":false,"log_type":"account"}', '2024-06-30 02:29:15.996789+00', ''),
+	('00000000-0000-0000-0000-000000000000', 'dfd3ae61-a19a-4608-9b0a-a085b152efc2', '{"action":"user_signedup","actor_id":"d2d92465-db5e-4894-816a-95a0292bc3f4","actor_username":"testuser@fakemail.com","actor_via_sso":false,"log_type":"team","traits":{"provider":"email"}}', '2024-06-30 02:29:20.685928+00', ''),
+	('00000000-0000-0000-0000-000000000000', 'c3d6e84d-2fe5-4de9-9885-69abd6f5f57f', '{"action":"login","actor_id":"d2d92465-db5e-4894-816a-95a0292bc3f4","actor_username":"testuser@fakemail.com","actor_via_sso":false,"log_type":"account","traits":{"provider":"email"}}', '2024-06-30 02:29:20.689259+00', ''),
+	('00000000-0000-0000-0000-000000000000', '64a4bd57-bdfa-4a03-9f7e-ccb1cf8dd3b4', '{"action":"logout","actor_id":"d2d92465-db5e-4894-816a-95a0292bc3f4","actor_username":"testuser@fakemail.com","actor_via_sso":false,"log_type":"account"}', '2024-06-30 02:29:22.51118+00', '');
 
 
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: auth; Owner: supabase_auth_admin
+--
 
 INSERT INTO "auth"."users" ("instance_id", "id", "aud", "role", "email", "encrypted_password", "email_confirmed_at", "invited_at", "confirmation_token", "confirmation_sent_at", "recovery_token", "recovery_sent_at", "email_change_token_new", "email_change", "email_change_sent_at", "last_sign_in_at", "raw_app_meta_data", "raw_user_meta_data", "is_super_admin", "created_at", "updated_at", "phone", "phone_confirmed_at", "phone_change", "phone_change_token", "phone_change_sent_at", "email_change_token_current", "email_change_confirm_status", "banned_until", "reauthentication_token", "reauthentication_sent_at", "is_sso_user", "deleted_at", "is_anonymous") VALUES
-	('00000000-0000-0000-0000-000000000000', 'b30ca799-a801-4efc-8cb8-486cde6688c9', 'authenticated', 'authenticated', 'testuser@fakemail.com', '$2a$10$WrD6npQxR70LHW9jmDTdy.YHK.qDClAa21/5Ti86NKW/3tE84lLHa', '2024-06-27 19:26:28.53361+00', NULL, '', NULL, '', NULL, '', '', NULL, '2024-06-27 23:42:13.382341+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "b30ca799-a801-4efc-8cb8-486cde6688c9", "email": "testuser@fakemail.com", "username": "testuser", "email_verified": false, "phone_verified": false}', NULL, '2024-06-27 19:26:28.529362+00', '2024-06-27 23:42:13.383426+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
-	('00000000-0000-0000-0000-000000000000', '53858ae2-ef53-401e-84cb-f3dfd32f1ef1', 'authenticated', 'authenticated', 'cryptobumper42@fakemail.com', '$2a$10$dAQgXPXuf5j2IqqW4Zw1DuAgvkOsMLtL/xpeFugZNQHc8rQFa.2im', '2024-06-27 06:46:35.554759+00', NULL, '', NULL, '', NULL, '', '', NULL, '2024-06-27 23:42:16.919373+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "53858ae2-ef53-401e-84cb-f3dfd32f1ef1", "email": "cryptobumper42@fakemail.com", "username": "cryptobumper42", "email_verified": false, "phone_verified": false}', NULL, '2024-06-27 06:46:35.547023+00', '2024-06-28 01:14:23.910708+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
+	('00000000-0000-0000-0000-000000000000', 'd88945cc-10ac-40b5-bb25-ee58b3575ce4', 'authenticated', 'authenticated', 'cryptobumper42@fakemail.com', '$2a$10$VKYudhWcXVhED95jnWrpmu9DgwTVLNVvr65r5ZnIlFWCo1QdLP.q6', '2024-06-30 02:29:11.459789+00', NULL, '', NULL, '', NULL, '', '', NULL, '2024-06-30 02:29:11.464169+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "d88945cc-10ac-40b5-bb25-ee58b3575ce4", "email": "cryptobumper42@fakemail.com", "username": "cryptobumper42", "email_verified": false, "phone_verified": false}', NULL, '2024-06-30 02:29:11.453808+00', '2024-06-30 02:29:11.466069+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false),
+	('00000000-0000-0000-0000-000000000000', 'd2d92465-db5e-4894-816a-95a0292bc3f4', 'authenticated', 'authenticated', 'testuser@fakemail.com', '$2a$10$rl9wbg1HVHlLDjcdEs4Q2.NgAE2cU43oT35JLVATYNCH9bCinRosO', '2024-06-30 02:29:20.686357+00', NULL, '', NULL, '', NULL, '', '', NULL, '2024-06-30 02:29:20.689649+00', '{"provider": "email", "providers": ["email"]}', '{"sub": "d2d92465-db5e-4894-816a-95a0292bc3f4", "email": "testuser@fakemail.com", "username": "testuser", "email_verified": false, "phone_verified": false}', NULL, '2024-06-30 02:29:20.682616+00', '2024-06-30 02:29:20.690737+00', NULL, NULL, '', '', NULL, '', 0, NULL, '', NULL, false, NULL, false);
 
+
+--
+-- Data for Name: identities; Type: TABLE DATA; Schema: auth; Owner: supabase_auth_admin
+--
 
 INSERT INTO "auth"."identities" ("provider_id", "user_id", "identity_data", "provider", "last_sign_in_at", "created_at", "updated_at", "id") VALUES
-	('53858ae2-ef53-401e-84cb-f3dfd32f1ef1', '53858ae2-ef53-401e-84cb-f3dfd32f1ef1', '{"sub": "53858ae2-ef53-401e-84cb-f3dfd32f1ef1", "email": "cryptobumper42@fakemail.com", "username": "cryptobumper42", "email_verified": false, "phone_verified": false}', 'email', '2024-06-27 06:46:35.552208+00', '2024-06-27 06:46:35.55223+00', '2024-06-27 06:46:35.55223+00', '3c48ef5d-30f2-49aa-9048-04c1cdf0dc9c'),
-	('b30ca799-a801-4efc-8cb8-486cde6688c9', 'b30ca799-a801-4efc-8cb8-486cde6688c9', '{"sub": "b30ca799-a801-4efc-8cb8-486cde6688c9", "email": "testuser@fakemail.com", "username": "testuser", "email_verified": false, "phone_verified": false}', 'email', '2024-06-27 19:26:28.531462+00', '2024-06-27 19:26:28.531494+00', '2024-06-27 19:26:28.531494+00', '078b6146-36c9-4f67-93bf-43a55863ba7d');
+	('d88945cc-10ac-40b5-bb25-ee58b3575ce4', 'd88945cc-10ac-40b5-bb25-ee58b3575ce4', '{"sub": "d88945cc-10ac-40b5-bb25-ee58b3575ce4", "email": "cryptobumper42@fakemail.com", "username": "cryptobumper42", "email_verified": false, "phone_verified": false}', 'email', '2024-06-30 02:29:11.457275+00', '2024-06-30 02:29:11.457301+00', '2024-06-30 02:29:11.457301+00', 'c028bdde-6cfe-4c51-89fd-71357db85372'),
+	('d2d92465-db5e-4894-816a-95a0292bc3f4', 'd2d92465-db5e-4894-816a-95a0292bc3f4', '{"sub": "d2d92465-db5e-4894-816a-95a0292bc3f4", "email": "testuser@fakemail.com", "username": "testuser", "email_verified": false, "phone_verified": false}', 'email', '2024-06-30 02:29:20.684434+00', '2024-06-30 02:29:20.68446+00', '2024-06-30 02:29:20.68446+00', 'cb236fbe-79be-4a7c-b17f-3f7b64389e14');
 
 
-INSERT INTO "public"."users" ("id", "username", "role", "email", "created_at", "updated_at") VALUES
-	('53858ae2-ef53-401e-84cb-f3dfd32f1ef1', 'cryptobumper42', 'USER', 'cryptobumper42@mail.com', '2024-06-27 06:46:35.54645+00', '2024-06-27 06:46:35.54645+00'),
-	('b30ca799-a801-4efc-8cb8-486cde6688c9', 'testuser', 'USER', NULL, '2024-06-27 19:26:28.529071+00', '2024-06-27 19:26:28.529071+00');
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO "public"."users" ("id", "username", "role", "email", "active", "created_at", "updated_at") VALUES
+	('d88945cc-10ac-40b5-bb25-ee58b3575ce4', 'cryptobumper42', 'USER', 'cryptobumper42@mail.com', true, '2024-06-30 02:29:11.453553+00', '2024-06-30 02:29:11.453553+00'),
+	('d2d92465-db5e-4894-816a-95a0292bc3f4', 'testuser', 'USER', NULL, true, '2024-06-30 02:29:20.682361+00', '2024-06-30 02:29:20.682361+00');
 
 
+--
+-- Data for Name: wallets; Type: TABLE DATA; Schema: public; Owner: postgres
+--
 
-SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 98, true);
+INSERT INTO "public"."wallets" ("id", "public_key", "secret_key") VALUES
+	('d88945cc-10ac-40b5-bb25-ee58b3575ce4', 'BP8gm3fnZsULD9WffuS1pVwpSPLRY3LP6nkJBKANKosg', '2vi8nD9WFSmyQumvSnEjJtbSF1CCH2y1mhuZ4kpe49qkbTq1WmG2xJenDUtLmFsqfKT9GahoKKGpVxpNKpQ74YgA'),
+	('d2d92465-db5e-4894-816a-95a0292bc3f4', '93wceqiJNB3RTbifis5MxFNtpzxButyW3vDqRrpPoauE', '5aHyrknW3YMS6gdhFU7T4nhNaGWY97PVGfeayBzVmtfGBGgat3ZenR3iuNTX8xDumTmng9PfD3kad8hBZvmfd5ZS');
+
+
+--
+-- Name: refresh_tokens_id_seq; Type: SEQUENCE SET; Schema: auth; Owner: supabase_auth_admin
+--
+
+SELECT pg_catalog.setval('"auth"."refresh_tokens_id_seq"', 2, true);
 
 
 --

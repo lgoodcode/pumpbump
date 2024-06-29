@@ -1,0 +1,90 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "description": "API definitions for Pumpbump services",
+    "version": "1.0.0",
+    "title": "Pumpbump API",
+    "contact": {
+      "email": "support@pumpbump.bot"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "wallet",
+      "description": "Operations about wallets"
+    },
+    {
+      "name": "pet",
+      "description": "Everything about your Pets",
+      "externalDocs": {
+        "description": "Find out more",
+        "url": "http://swagger.io"
+      }
+    },
+    {
+      "name": "store",
+      "description": "Access to Petstore orders"
+    },
+    {
+      "name": "user",
+      "description": "Operations about user",
+      "externalDocs": {
+        "description": "Find out more about our store",
+        "url": "http://swagger.io"
+      }
+    }
+  ],
+  "paths": {
+    "/wallet/generate/{userId}": {
+      "get": {
+        "tags": ["wallet"],
+        "summary": "Generate a new wallet for a user",
+        "description": "Generate a new wallet for a user",
+        "operationId": "generateWallet",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "ID of user to generate wallet for",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successfully generated wallet and saved to database"
+          },
+          "400": {
+            "description": "Invalid user ID supplied"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Failed to generate wallet"
+          }
+        }
+      }
+    }
+  }
+}

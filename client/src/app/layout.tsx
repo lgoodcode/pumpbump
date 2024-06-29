@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
-import { JotaiProvider } from '@/components/jotai-provider';
 import { AppProgressBar as ProgressBar } from '@/components/ui/progress-bar';
 import { cn } from '@/lib/utils';
 import '@/styles/globals.css';
@@ -25,15 +24,13 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="en" className="dark">
       <body className={cn('font-sans', 'antialiased', inter.variable)}>
         <div className="gradient-bg-image" />
-        <JotaiProvider>
-          <ProgressBar
-            height="4px"
-            color="#6d28d9e6"
-            options={{ showSpinner: false }}
-            shallowRouting
-          />
-          {children}
-        </JotaiProvider>
+        <ProgressBar
+          height="4px"
+          color="#6d28d9e6"
+          options={{ showSpinner: false }}
+          shallowRouting
+        />
+        {children}
       </body>
     </html>
   );

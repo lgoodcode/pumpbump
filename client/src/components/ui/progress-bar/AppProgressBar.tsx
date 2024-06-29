@@ -8,7 +8,7 @@ import { NavigateOptions } from 'next/dist/shared/lib/app-router-context.shared-
 
 type PushStateInput = [data: any, unused: string, url?: string | URL | null | undefined];
 
-export const AppProgressBar = React.memo(
+const AppProgressBar = React.memo(
   ({
     color = '#0A2FFF',
     height = '2px',
@@ -311,3 +311,7 @@ export function useRouter() {
 
   return enhancedRouter;
 }
+
+AppProgressBar.displayName = 'AppProgressBar';
+
+export { AppProgressBar };

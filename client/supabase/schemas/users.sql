@@ -6,6 +6,7 @@ CREATE TABLE users (
     username text NOT NULL UNIQUE,
     role user_role NOT NULL DEFAULT 'USER',
     email text UNIQUE DEFAULT NULL,
+    active boolean NOT NULL DEFAULT TRUE,
     created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now())
 );
@@ -54,14 +55,8 @@ CREATE POLICY "Can view own data and admins can view all users data" ON public.u
     TO authenticated
     USING ((SELECT auth.uid()) = id OR (SELECT is_admin((SELECT auth.uid()))));
 
-CREATE POLICY "Can update own data and admins can update all users data" ON public.users
+CREATE POLICY "Only admins can update users data" ON public.users
     FOR UPDATE
-    TO authenticated
-    USING ((SELECT auth.uid()) = id OR is_admin((SELECT auth.uid())))
-    WITH CHECK (((SELECT auth.uid()) = id AND role = users.role) OR (SELECT is_admin((SELECT auth.uid()))));
-
-CREATE POLICY "Admins can delete users" ON public.users
-    FOR DELETE
     TO authenticated
     USING (is_admin((SELECT auth.uid())));
 

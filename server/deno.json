@@ -1,14 +1,17 @@
 {
   "tasks": {
-    "start": "DENO_ENV=production deno run --allow-read --allow-env --allow-net src/server.ts",
-    "dev": "deno run --watch --allow-read --allow-env --allow-net src/server.ts",
+    "start": "DENO_ENV=production deno run --allow-read --allow-env --allow-net --allow-ffi src/server.ts",
+    "dev": "deno run --watch --allow-read --allow-env --allow-net --allow-ffi src/server.ts",
     "supabase:gen-types": "supabase gen types typescript --local > ./src/lib/supabase/database.ts"
   },
   "imports": {
     "hono": "jsr:@hono/hono@^4.4.9",
+    "@hono/swagger-ui": "npm:@hono/swagger-ui",
+    "zod": "https://deno.land/x/zod@v3.23.8/mod.ts",
     "dotenv": "https://deno.land/std@0.224.0/dotenv/mod.ts",
     "supabase": "https://esm.sh/@supabase/supabase-js@2.26.0",
     "logger": "https://deno.land/std@0.224.0/log/mod.ts",
-    "@solana/web3.js": "npm:@solana/web3.js"
+    "@solana/web3.js": "npm:@solana/web3.js",
+    "bs58": "https://deno.land/std@0.170.0/encoding/base58.ts"
   }
 }

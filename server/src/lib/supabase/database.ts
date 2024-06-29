@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       users: {
         Row: {
+          active: boolean
           created_at: string
           email: string | null
           id: string
@@ -19,6 +20,7 @@ export type Database = {
           username: string
         }
         Insert: {
+          active?: boolean
           created_at?: string
           email?: string | null
           id: string
@@ -27,6 +29,7 @@ export type Database = {
           username: string
         }
         Update: {
+          active?: boolean
           created_at?: string
           email?: string | null
           id?: string
@@ -37,6 +40,32 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "users_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallets: {
+        Row: {
+          id: string
+          public_key: string
+          secret_key: string
+        }
+        Insert: {
+          id: string
+          public_key: string
+          secret_key: string
+        }
+        Update: {
+          id?: string
+          public_key?: string
+          secret_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_id_fkey"
             columns: ["id"]
             isOneToOne: true
             referencedRelation: "users"

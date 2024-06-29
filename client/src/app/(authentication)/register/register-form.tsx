@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { captureException } from '@sentry/nextjs';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -34,7 +33,6 @@ export function RegisterForm() {
     await register(data).catch((error) => {
       console.error(error);
       setServerError(error.message);
-      captureException(error);
     });
   };
 
