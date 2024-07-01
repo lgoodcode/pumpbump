@@ -1,10 +1,11 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { Keypair } from "@solana/web3.js";
-import * as bs58 from "bs58";
+import bs58 from "bs58";
+import { captureException } from "Sentry";
 
-import { validate } from "../lib/middleware.ts";
-import { supabase } from "../lib/supabase/client.ts";
+import { validate } from "@/lib/middleware.ts";
+import { supabase } from "@/lib/supabase/client.ts";
 
 export const Wallet = new Hono();
 
@@ -23,6 +24,7 @@ Wallet.get(
 
     if (error) {
       console.error(error);
+      captureException(error);
       return ctx.json({ error: "Failed to insert wallet into database" }, 500);
     }
 

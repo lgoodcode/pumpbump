@@ -2,13 +2,22 @@ import type { MiddlewareHandler } from "hono";
 import { swaggerUI } from "@hono/swagger-ui";
 import { z } from "zod";
 
-import spec from "../spec.json" with { type: "json" };
-import { IS_PROD } from "../constants/index.ts";
-import { env, logger } from "../utils/index.ts";
+import spec from "@/spec.json" with { type: "json" };
+import { RouteSchema } from "@/constants/types.ts";
+import { IS_PROD } from "@/constants/index.ts";
+import { env, logger } from "@/utils/index.ts";
 
 export const logging: MiddlewareHandler = async (ctx, next) => {
+  const start = performance.now();
   logger.info(`${ctx.req.method} - ${ctx.req.url}`);
-  return await next();
+  await next();
+
+  const duration = performance.now() - start;
+  if (duration > 1000) {
+    logger.info(`Response time: ${duration / 1000}s`);
+  } else {
+    logger.info(`Response time: ${duration}ms`);
+  }
 };
 
 export const authentication: MiddlewareHandler = async (ctx, next) => {
@@ -32,60 +41,95 @@ export const swagger: MiddlewareHandler = (ctx, next) => {
   })(ctx, next);
 };
 
-export const validate = (schemas: {
-  body?: z.Schema;
-  params?: Record<string, z.Schema>;
-  query?: Record<string, z.Schema>;
-}): MiddlewareHandler =>
-async (ctx, next) => {
-  const errors: Record<string, { _errors: string[] }> = {};
-
-  if (schemas.body) {
-    try {
-      const body = await ctx.req.json();
-      schemas.body.parse(body);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        errors["body"] = error.format();
-      } else {
-        throw error;
-      }
+/**
+ * Parses and validates the request body, params, and queries against the provided
+ * schemas and sets the parsed values on the context object under the "data" key.
+ * @param schemas
+ */
+export const validate =
+  (schemas: RouteSchema): MiddlewareHandler => async (ctx, next) => {
+    if (!Object.keys(schemas).length) {
+      console.warn("No schemas provided to validate middleware");
+      return await next();
     }
-  }
 
-  if (schemas.params) {
-    for (const [param, schema] of Object.entries(schemas.params)) {
-      const value = ctx.req.param(param);
-      try {
-        schema.parse(value);
-      } catch (error) {
-        if ((error instanceof z.ZodError)) {
-          errors[param] = error.format();
-        } else {
-          throw error;
-        }
-      }
+    const contentType = ctx.req.header("Content-Type");
+    if (schemas.body && contentType !== "application/json") {
+      return ctx.json({ error: "Invalid Content-Type" }, 400);
     }
-  }
 
-  if (schemas.query) {
-    for (const [query, schema] of Object.entries(schemas.query)) {
-      const value = ctx.req.query(query);
+    const errors: Record<string, { _errors: string[] }> = {};
+    const params: Record<string, any> = {};
+    const queries: Record<string, any> = {};
+    let body = {};
+
+    if (schemas.body) {
       try {
-        schema.parse(value);
+        body = await ctx.req.json();
+      } catch (_) {
+        return ctx.json({
+          errors: {
+            body: {
+              body: {
+                _errors: ["Invalid JSON"],
+              },
+            },
+          },
+        }, 400);
+      }
+
+      try {
+        body = schemas.body.parse(body);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          errors[query] = error.format();
+          errors["body"] = error.format();
         } else {
           throw error;
         }
       }
     }
-  }
 
-  if (Object.keys(errors).length > 0) {
-    return ctx.json({ errors }, 400);
-  }
+    if (schemas.params) {
+      for (const [param, schema] of Object.entries(schemas.params)) {
+        const value = ctx.req.param(param);
+        try {
+          schema.parse(value);
+          params[param] = value;
+        } catch (error) {
+          if ((error instanceof z.ZodError)) {
+            errors[param] = error.format();
+          } else {
+            throw error;
+          }
+        }
+      }
+    }
 
-  await next();
-};
+    if (schemas.query) {
+      for (const [query, schema] of Object.entries(schemas.query)) {
+        const value = ctx.req.query(query);
+        try {
+          schema.parse(value);
+          queries[query] = value;
+        } catch (error) {
+          if (error instanceof z.ZodError) {
+            errors[query] = error.format();
+          } else {
+            throw error;
+          }
+        }
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return ctx.json({ errors }, 400);
+    }
+
+    ctx.set("data", {
+      body,
+      params,
+      queries,
+    });
+
+    await next();
+  };

@@ -1,6 +1,6 @@
 import { RegisterUserForm, registerUserFormSchema } from "@/lib/schemas/user";
 import { createServer } from "@/lib/supabase/server";
-import { api } from "@/app/api/axios";
+import { client } from "@/lib/api/client";
 
 export const dynamic = "force-dynamic";
 export const POST = async (req: Request) => {
@@ -48,9 +48,12 @@ export const POST = async (req: Request) => {
     }
 
     // Send the request to generate the wallet - error logging is done on that server
-    const response = await api.get(`/wallet/generate/${user.id}`);
-    if (response.status !== 201) {
-      console.error(response.data);
+    const { error: walletError } = await client.GET(
+      "/wallet/generate/{userId}",
+      { params: { path: { userId: user.id } } },
+    );
+    if (walletError) {
+      console.error(walletError);
       return Response.json({
         error: "An unexpected error occurred",
         isSupabaseError: false,

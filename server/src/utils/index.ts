@@ -1,8 +1,8 @@
 import { load } from "dotenv";
 
-import { IS_PROD } from "../constants/index.ts";
+import { IS_PROD } from "@/constants/index.ts";
 
-export * from "./logger.ts";
+export * from "@/utils/logger.ts";
 
 const dotenv = await load();
 

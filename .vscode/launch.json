@@ -34,7 +34,7 @@
       "cwd": "${workspaceFolder}/server",
       "program": "src/server.ts",
       "runtimeExecutable": "deno",
-      "runtimeArgs": ["run", "--inspect-wait=127.0.0.1:9229", "--allow-all", "--watch"],
+      "runtimeArgs": ["run", "--inspect-wait=127.0.0.1:9229", "--allow-all"],
       "attachSimplePort": 9229
     }
   ]

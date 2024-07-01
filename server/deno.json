@@ -5,13 +5,21 @@
     "supabase:gen-types": "supabase gen types typescript --local > ./src/lib/supabase/database.ts"
   },
   "imports": {
+    "@/": "./src/",
+    "Buffer": "https://deno.land/std@0.177.0/node/buffer.ts",
     "hono": "jsr:@hono/hono@^4.4.9",
     "@hono/swagger-ui": "npm:@hono/swagger-ui",
+    "Sentry": "https://deno.land/x/sentry@8.12.0/index.mjs",
+    "oakCors": "https://deno.land/x/cors@v1.2.2/mod.ts",
     "zod": "https://deno.land/x/zod@v3.23.8/mod.ts",
     "dotenv": "https://deno.land/std@0.224.0/dotenv/mod.ts",
     "supabase": "https://esm.sh/@supabase/supabase-js@2.26.0",
     "logger": "https://deno.land/std@0.224.0/log/mod.ts",
+    "colors": "https://deno.land/std@0.224.0/fmt/colors.ts",
     "@solana/web3.js": "npm:@solana/web3.js",
-    "bs58": "https://deno.land/std@0.170.0/encoding/base58.ts"
+    "@coral-xyz/anchor": "npm:@coral-xyz/anchor@^0.29.0",
+    "bs58": "npm:bs58",
+    "BN": "npm:bn.js",
+    "openapi-typescript": "npm:openapi-typescript"
   }
 }
