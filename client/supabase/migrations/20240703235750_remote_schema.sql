@@ -35,7 +35,6 @@ CREATE TYPE "public"."user_role" AS ENUM (
 
 ALTER TYPE "public"."user_role" OWNER TO "postgres";
 
-
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -51,9 +50,6 @@ END;
 $$;
 
 ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
-
-CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_user"();
-
 
 CREATE OR REPLACE FUNCTION "public"."is_admin"() RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -108,7 +104,8 @@ CREATE TABLE IF NOT EXISTS "public"."users" (
 ALTER TABLE "public"."users" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."wallets" (
-    "id" "uuid" NOT NULL,
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "user_id" "uuid",
     "public_key" "text" NOT NULL,
     "secret_key" "text" NOT NULL
 );
@@ -127,15 +124,17 @@ ALTER TABLE ONLY "public"."users"
 ALTER TABLE ONLY "public"."wallets"
     ADD CONSTRAINT "wallets_pkey" PRIMARY KEY ("id");
 
+CREATE INDEX "idx_wallets_user_id" ON "public"."wallets" USING "btree" ("user_id");
+
 ALTER TABLE ONLY "public"."users"
     ADD CONSTRAINT "users_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 ALTER TABLE ONLY "public"."wallets"
-    ADD CONSTRAINT "wallets_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "wallets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
 
 CREATE POLICY "Can view own data and admins can view all users data" ON "public"."users" FOR SELECT TO "authenticated" USING (((( SELECT "auth"."uid"() AS "uid") = "id") OR ( SELECT "public"."is_admin"(( SELECT "auth"."uid"() AS "uid")) AS "is_admin")));
 
-CREATE POLICY "Can view wallet address" ON "public"."wallets" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "id"));
+CREATE POLICY "Can view wallet address" ON "public"."wallets" FOR SELECT TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") = "user_id"));
 
 CREATE POLICY "Only admins can update users data" ON "public"."users" FOR UPDATE TO "authenticated" USING ("public"."is_admin"(( SELECT "auth"."uid"() AS "uid")));
 
@@ -144,7 +143,6 @@ ALTER TABLE "public"."users" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."wallets" ENABLE ROW LEVEL SECURITY;
 
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
-
 
 GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
@@ -191,3 +189,10 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "service_role";
 
 RESET ALL;
+
+--
+-- Dumped schema changes for auth and storage
+--
+
+CREATE OR REPLACE TRIGGER "on_auth_user_created" AFTER INSERT ON "auth"."users" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_user"();
+

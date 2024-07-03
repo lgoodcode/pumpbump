@@ -1,6 +1,7 @@
 -- No accounts or wallets will be deleted, only accounts deactivated
+
 CREATE TABLE wallets (
-    id uuid PRIMARY KEY,
+    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id uuid REFERENCES auth.users(id),
     public_key text NOT NULL, -- Address in base58 format
     secret_key text NOT NULL -- Key in base58 format

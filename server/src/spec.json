@@ -65,6 +65,10 @@
   ],
   "tags": [
     {
+      "name": "auth",
+      "description": "Operations about authentication"
+    },
+    {
       "name": "wallet",
       "description": "Operations about wallets"
     },

@@ -49,12 +49,3 @@ Bump.post("/:tokenAddress", validate(bumpSchema), async (ctx) => {
     return ctx.json({ error: "An unexpected error occurred" }, 500);
   }
 });
-
-Bump.get("/test", async (ctx) => {
-  // every 5 seconds log a message and then return a 200 for 90 seconds
-  for (let i = 0; i < 18; i++) {
-    console.log("Test bump route");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  }
-  return ctx.text("Test bump route complete");
-});

@@ -10,14 +10,14 @@ import { supabase } from "@/lib/supabase/client.ts";
 export const Wallet = new Hono();
 
 Wallet.get(
-  "/generate/:id",
-  validate({ params: { id: z.string().uuid() } }),
+  "/generate/:userId",
+  validate({ params: { userId: z.string().uuid() } }),
   async (ctx) => {
-    const id = ctx.req.param("id");
+    const userId = ctx.req.param("userId");
     const keypair = Keypair.generate();
 
     const { error } = await supabase.from("wallets").insert({
-      id,
+      user_id: userId,
       public_key: keypair.publicKey.toBase58(),
       secret_key: bs58.encode(keypair.secretKey),
     });
@@ -28,6 +28,6 @@ Wallet.get(
       return ctx.json({ error: "Failed to insert wallet into database" }, 500);
     }
 
-    return ctx.text("Wallet generated successfully", 201);
+    return ctx.body(null, 201);
   },
 );
