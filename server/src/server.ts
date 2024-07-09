@@ -7,6 +7,7 @@ import { logger } from "@/utils/index.ts";
 import { authentication, logging, swagger } from "@/lib/middleware.ts";
 import { Wallet } from "@/routes/wallet.ts";
 import { Bump } from "@/routes/bump.ts";
+import { Task } from "@/routes/task.ts";
 
 const app = new Hono();
 
@@ -18,6 +19,7 @@ app.get("/docs", swagger);
 
 app.route("/wallet", Wallet);
 app.route("/bump", Bump);
+app.route("/task", Task);
 
 app.notFound((ctx) => {
   logger.error(ctx.error);

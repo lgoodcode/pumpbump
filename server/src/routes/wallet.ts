@@ -31,3 +31,49 @@ Wallet.get(
     return ctx.body(null, 201);
   },
 );
+
+// const worker = new Worker(new URL("../worker.ts", import.meta.url).href, {
+//   type: "module",
+//   deno: {
+//     permissions: {
+//       net: true,
+//     },
+//   },
+// });
+
+// worker.onmessage = (event) => {
+//   const { success, result, error } = event.data;
+//   if (success) {
+//     console.log("Task completed successfully:", result);
+//   } else {
+//     console.error("Task failed:", error);
+//   }
+// };
+
+// Wallet.get("/worker/start/:taskId", async (ctx) => {
+//   console.log("received task start request");
+//   // sleep 2 seconds
+//   await new Promise((resolve) => setTimeout(resolve, 2000));
+//   console.log("sending task start message");
+//   worker.postMessage({
+//     task: {
+//       id: ctx.req.param("taskId"),
+//       action: "start",
+//     },
+//   });
+//   return ctx.body(null, 202);
+// });
+
+// Wallet.get("/worker/stop/:taskId", async (ctx) => {
+//   console.log("received task stop request");
+//   // sleep 2 seconds
+//   await new Promise((resolve) => setTimeout(resolve, 2000));
+//   console.log("sending task stop message");
+//   worker.postMessage({
+//     task: {
+//       id: ctx.req.param("taskId"),
+//       action: "stop",
+//     },
+//   });
+//   return ctx.body(null, 202);
+// });

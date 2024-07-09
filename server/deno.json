@@ -1,12 +1,13 @@
 {
   "tasks": {
     "start": "DENO_ENV=production deno run --allow-read --allow-env --allow-net --allow-ffi src/server.ts",
-    "dev": "deno run --watch --allow-read --allow-env --allow-net --allow-ffi src/server.ts",
+    "dev": "deno run --watch --allow-read --allow-env --allow-net --allow-ffi --unstable-worker-options src/server.ts",
     "supabase:gen-types": "supabase gen types typescript --local > ./src/lib/supabase/database.ts"
   },
   "imports": {
     "@/": "./src/",
     "Buffer": "https://deno.land/std@0.177.0/node/buffer.ts",
+    "EventEmitter": "https://deno.land/std@0.177.0/node/events.ts",
     "hono": "jsr:@hono/hono@^4.4.9",
     "@hono/swagger-ui": "npm:@hono/swagger-ui",
     "Sentry": "https://deno.land/x/sentry@8.12.0/index.mjs",
