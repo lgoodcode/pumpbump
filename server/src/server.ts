@@ -19,7 +19,10 @@ app.get("/docs", swagger);
 
 app.route("/wallet", Wallet);
 app.route("/bump", Bump);
-app.route("/task", Task);
+
+if (!IS_PROD) {
+  app.route("/task", Task);
+}
 
 app.notFound((ctx) => {
   logger.error(ctx.error);

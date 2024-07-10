@@ -9,15 +9,17 @@ import { env, logger } from "@/utils/index.ts";
 
 export const logging: MiddlewareHandler = async (ctx, next) => {
   const start = performance.now();
-  logger.info(`${ctx.req.method} - ${ctx.req.url}`);
   await next();
 
   const duration = performance.now() - start;
+  let time = "";
   if (duration > 1000) {
-    logger.info(`Response time: ${duration / 1000}s`);
+    time = `${duration / 1000}s`;
   } else {
-    logger.info(`Response time: ${duration}ms`);
+    time = `${duration}ms`;
   }
+
+  logger.info(`${ctx.req.method} ${ctx.req.url} - ${time}`);
 };
 
 export const authentication: MiddlewareHandler = async (ctx, next) => {

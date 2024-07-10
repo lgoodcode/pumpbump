@@ -45,11 +45,11 @@ export const MINUMUM_EXPERIMENT_INTERVAL = 1500;
 
 // // Pumpfun endpoints
 // export const registerEndpoint =
-//   "https://client-api-2-74b1891ee9f9.herokuapp.com/users/register";
+//   "https://frontend-api.pump.fun/users/register";
 // export const loginEndpoint =
-//   "https://client-api-2-74b1891ee9f9.herokuapp.com/auth/login";
+//   "https://frontend-api.pump.fun/auth/login";
 // export const repliesEndpoint =
-//   "https://client-api-2-74b1891ee9f9.herokuapp.com/replies";
+//   "https://frontend-api.pump.fun/replies";
 
 // //constant file paths
 // export const buyBotWalletsPath = resolve(
