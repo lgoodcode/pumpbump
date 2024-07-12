@@ -5,6 +5,7 @@ import { TaskManager } from "@/utils/task-manager/task-manager.ts";
 import {
   type TaskManagerInterval,
   taskManagerSchema,
+  type TaskManagerStart,
 } from "@/utils/task-manager/schema.ts";
 
 export const Task = new Hono();
@@ -12,7 +13,7 @@ const taskManager = new TaskManager();
 
 Task.post(
   "/manage/interval",
-  validate({ body: taskManagerSchema.interval }),
+  validate(taskManagerSchema.interval),
   (ctx) => {
     const { interval } = ctx.get("data").body as TaskManagerInterval;
     taskManager.processingInterval = interval;
@@ -20,16 +21,15 @@ Task.post(
   },
 );
 
-Task.get("/start/:userId", (ctx) => {
-  const userId = ctx.req.param("userId");
-  const totalRuns = ctx.req.query("totalRuns") ?? "10";
-  const interval = ctx.req.query("interval") ?? "1000";
+Task.post("/create", validate(taskManagerSchema.start), (ctx) => {
+  const { userId, runs, interval } = ctx.get("data").body as TaskManagerStart;
 
   taskManager.addTask({
     userId,
-    totalRuns: parseInt(totalRuns),
-    interval: parseInt(interval),
+    totalRuns: runs,
+    interval,
   });
+
   return ctx.body(null, 201);
 });
 
