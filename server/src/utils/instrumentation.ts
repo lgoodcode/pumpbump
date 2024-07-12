@@ -1,4 +1,4 @@
-import * as Sentry from "Sentry";
+import { init } from "Sentry";
 
 import { IS_PROD } from "@/constants/index.ts";
 import { env } from "@/utils/index.ts";
@@ -12,5 +12,5 @@ if (!Deno.permissions.querySync) {
 }
 
 if (IS_PROD) {
-  Sentry.init({ dsn: env("SENTRY_DSN") });
+  init({ dsn: env("SENTRY_DSN") });
 }

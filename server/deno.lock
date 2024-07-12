@@ -643,6 +643,7 @@
     "https://deno.land/x/oak_rate_limit@v0.1.1/src/utils/defaults.ts": "d37fd3f54c8bd1d0dcbcb0d376b1d2c4b33d4fe1bba86a166aee63d0152955c6",
     "https://deno.land/x/path_to_regexp@v6.2.1/index.ts": "894060567837bae8fc9c5cbd4d0a05e9024672083d5883b525c031eea940e556",
     "https://deno.land/x/sentry@8.12.0/index.mjs": "2dbbb7cfc9d0b365099fa2cd1a16a301c7233b214c77a8685e66b7c5b8a72224",
+    "https://deno.land/x/sentry@8.17.0/index.mjs": "b93d818a7c67a4f87b17b1c95b9dc3e622a8e21e7ae119f7512d1c75b00776f4",
     "https://deno.land/x/xhr@0.3.0/mod.ts": "094aacd627fd9635cd942053bf8032b5223b909858fa9dc8ffa583752ff63b20",
     "https://deno.land/x/zod@v3.23.8/ZodError.ts": "528da200fbe995157b9ae91498b103c4ef482217a5c086249507ac850bd78f52",
     "https://deno.land/x/zod@v3.23.8/errors.ts": "5285922d2be9700cc0c70c95e4858952b07ae193aa0224be3cbd5cd5567eabef",

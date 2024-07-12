@@ -10,7 +10,7 @@
     "EventEmitter": "https://deno.land/std@0.177.0/node/events.ts",
     "hono": "jsr:@hono/hono@^4.4.9",
     "@hono/swagger-ui": "npm:@hono/swagger-ui",
-    "Sentry": "https://deno.land/x/sentry@8.12.0/index.mjs",
+    "Sentry": "https://deno.land/x/sentry@8.17.0/index.mjs",
     "oakCors": "https://deno.land/x/cors@v1.2.2/mod.ts",
     "zod": "https://deno.land/x/zod@v3.23.8/mod.ts",
     "dotenv": "https://deno.land/std@0.224.0/dotenv/mod.ts",

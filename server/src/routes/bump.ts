@@ -1,15 +1,14 @@
-import { Hono } from "hono";
 import { z } from "zod";
 import { PublicKey } from "@solana/web3.js";
 import { captureException } from "Sentry";
 
-import { RouteData, RouteSchema } from "@/constants/types.ts";
+import { Hono } from "@/utils/hono.ts";
 import { validate } from "@/lib/middleware.ts";
 import { validateSolAddress } from "@/utils/solana/index.ts";
 import { bumpExperiment } from "@/utils/solana/bump/index.ts";
 import { BASE_SPLIPPAGE } from "@/constants/index.ts";
 
-export const Bump = new Hono<{ Variables: { data: RouteData } }>();
+export const Bump = new Hono();
 
 const bumpSchema = {
   params: {
@@ -31,7 +30,7 @@ const bumpSchema = {
     }),
     slippage: z.number().positive().min(0.01).default(BASE_SPLIPPAGE),
   }),
-} satisfies RouteSchema;
+};
 
 type BumpData = z.infer<typeof bumpSchema.body>;
 

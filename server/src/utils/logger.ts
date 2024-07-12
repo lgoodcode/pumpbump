@@ -7,7 +7,7 @@ export const logger = new Logger("server", IS_PROD ? "INFO" : "DEBUG", {
     new ConsoleHandler(IS_PROD ? "INFO" : "DEBUG", {
       useColors: true,
       formatter: (record) =>
-        `[${record.datetime.toISOString()}] ${record.levelName} ${record.msg}`,
+        `${record.datetime.toISOString()} [${record.levelName}] ${record.msg}`,
     }),
   ],
 });
