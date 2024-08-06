@@ -5,7 +5,8 @@ import { z } from "zod";
 import spec from "@/spec.json" with { type: "json" };
 import { RouteSchema } from "@/constants/types.ts";
 import { IS_PROD } from "@/constants/index.ts";
-import { env, logger } from "@/utils/index.ts";
+import { env } from "@/utils/env.ts";
+import { logger } from "@/utils/logger.ts";
 
 export const logging: MiddlewareHandler = async (ctx, next) => {
   const start = performance.now();
@@ -28,6 +29,7 @@ export const authentication: MiddlewareHandler = async (ctx, next) => {
   }
 
   const secret = ctx.req.header("Authorization")?.split("Bearer ")[1];
+  console.log("secret", secret);
   if (!secret || env("AUTH_TOKEN") !== secret) {
     logger.error("Unauthorized");
     ctx.status(401);
@@ -40,6 +42,7 @@ export const swagger: MiddlewareHandler = (ctx, next) => {
   return swaggerUI({
     spec,
     url: "/docs",
+    // @ts-ignore - This is fine
   })(ctx, next);
 };
 

@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-explicit-any
+
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import { z } from "zod";
@@ -14,9 +16,9 @@ export type RouteData = {
   body: Record<string, any>;
 };
 
-/** Helius API START */
+/// Helius API START ///
 export type PriorityLevel = "low" | "medium" | "high" | "veryHigh";
-/** Helius API END */
+/// Helius API END ///
 
 export interface CreateTransactionOptions {
   /** The transaction amount in SOL */
@@ -27,7 +29,7 @@ export interface CreateTransactionOptions {
   fee?: "optimal" | number;
 }
 
-/** Experiment START */
+/// Experiment START ///
 export type ExperimentParams = {
   mint: PublicKey;
   runs: number;
@@ -55,7 +57,7 @@ export type ExperimentResult = {
   total_fee: string;
   avg_fee: string;
 };
-/** Experiment END */
+/// Experiment END ///
 
 export interface BondingCurveData {
   virtualTokenReserves: BN;

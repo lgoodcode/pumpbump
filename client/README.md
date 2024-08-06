@@ -73,6 +73,23 @@ WITH CHECK ((SELECT auth.uid()) = id AND role = users.role);
 
 ### Database Migrations
 
+#### **!!! Important**
+
+When making migrations, always ensure that if the current main migration is modified or deleted, that the following is added to the bottom:
+
+```sql
+--
+-- Dumped schema changes for auth and storage
+--
+
+CREATE OR REPLACE TRIGGER "on_auth_user_created" AFTER INSERT ON "auth"."users" FOR EACH ROW EXECUTE FUNCTION "public"."handle_new_user"();
+
+```
+
+This is because the `db pull` doesn't retrieve this and is required for the auth triggers to work for creating new users.
+
+#### Creating Migrations
+
 This is the flow for creating database changes:
 
 1. Ensure you have the newest migrations from the remote database:
@@ -96,7 +113,7 @@ supabase migration up
 4. Once you are satisfied with the changes, you can review the changes using a diff
 
 ```bash
-supabase migration diff --linked
+supabase db diff --linked
 ```
 
 **Note:** Running the diff against the local database won't work because the test migrations are applied to it (in the migrations folder).

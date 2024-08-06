@@ -9,6 +9,80 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      bumps: {
+        Row: {
+          action: string
+          completed_runs: number
+          created_at: string
+          failed_runs: number
+          id: string
+          interval: number
+          params: Json
+          status: string
+          total_runs: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          completed_runs?: number
+          created_at?: string
+          failed_runs?: number
+          id: string
+          interval: number
+          params: Json
+          status: string
+          total_runs: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          completed_runs?: number
+          created_at?: string
+          failed_runs?: number
+          id?: string
+          interval?: number
+          params?: Json
+          status?: string
+          total_runs?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bumps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_runs: {
+        Row: {
+          created_at: string
+          id: string
+          success: boolean
+          task_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          success: boolean
+          task_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          success?: boolean
+          task_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           active: boolean
@@ -81,6 +155,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      finish_bump: {
+        Args: {
+          task_id: string
+          final_status: string
+        }
+        Returns: undefined
+      }
+      get_wallet_secret_key: {
+        Args: {
+          user_id: string
+        }
+        Returns: string
+      }
       is_admin:
         | {
             Args: Record<PropertyKey, never>

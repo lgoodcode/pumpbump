@@ -1,6 +1,6 @@
 import { MINUMUM_EXPERIMENT_INTERVAL } from "@/constants/index.ts";
 
-abstract class CustomError extends Error {
+export abstract class CustomError extends Error {
   constructor(message?: string) {
     super(message);
   }

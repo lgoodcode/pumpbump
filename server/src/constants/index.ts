@@ -9,6 +9,9 @@ export const MEMO_PROGRAM_ID = "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr";
 export const FEE_RECIPIENT = "CebN5WGQ4jvEPvsVU4EoHEpgzq1VV7AbicfhtW4xC9iM";
 export const EVENT_AUTH = "Ce6TQqeHC9p8KetsN6JsjHK7UTZk7nasjjnr7XxXp9F1";
 
+/** The percentage of the amount of transactions we charge */
+export const SERVICE_FEE_PERCENTAGE = 0.05;
+
 // Transaction constants
 export const SystemAccountRent = 0.00089088 * LAMPORTS_PER_SOL;
 export const PUMP_TOKEN_DECIMALS = 6;
@@ -23,7 +26,33 @@ export const BASE_PRIORITY_FEE_MICRO_LAMPORTS = 1_000_000;
 export const MAX_PRIORITY_FEE_MICRO_LAMPORTS = 20_000_000;
 /** The base Compute Units (CU) to use if the estimate retrieval failed */
 export const BASE_COMPUTE_UNITS = 200_000;
-export const BASE_SPLIPPAGE = 0.05;
+/**
+ * TaskManager constants
+ */
+export const TASK_PROCESSING_MAX_ACTIVE_TASKS = 10;
+// 10ms is the minimum to prevent event loop blocking, however, our RPC provider
+// has a rate limit of 50 requests per second and each transaction can take at
+// least 5 requests, so we need to set the minimum interval to 200ms
+export const TASK_PROCESSING_INTERVAL_MINIMUM = 200;
+export const TASK_PROCESSING_INTERVAL_MAXIMUM = 10000;
+// Using 300ms to be safe to prevent any rate limiting issues
+export const TASK_PROCESSING_INTERVAL_DEFAULT = 300;
+/**
+ * Bump transaction constants
+ */
+export const BUMP_RUNS_MINIMUM = 1;
+export const BUMP_RUNS_MAXIMUM = 1_000_000;
+// 1000ms is the minimum to prevent duplicate transactions in Solana
+export const BUMP_INTERVAL_MINIMUM = 1000;
+export const BUMP_INTERVAL_MAXIMUM = 10000;
+export const BUMP_AMOUNT_MINIMUM = 0.000001;
+export const BUMP_AMOUNT_MAXIMUM = 1000;
+export const BUMP_SPLIPPAGE_MINIMUM = 0.01;
+export const BUMP_SPLIPPAGE_DEFAULT = 0.05;
+export const BUMP_SPLIPPAGE_MAXIMUM = 1;
+export const BUMP_FEE_MINIMUM = 0.0001;
+export const BUMP_FEE_MAXIMUM = 1000;
+
 /**
  * The minimum time to wait between experiments (creating transactions). This is because
  * all the parameters are the same so, if we create transactions too quickly, it allows

@@ -19,3 +19,19 @@ CREATE POLICY "Can view wallet address" ON public.wallets
     FOR SELECT
     TO authenticated
     USING ((SELECT auth.uid()) = user_id);
+
+CREATE OR REPLACE FUNCTION get_wallet_secret_key(user_id uuid)
+RETURNS text AS $$
+BEGIN
+    PERFORM
+        FROM wallets
+        WHERE wallets.user_id = $1;
+    IF FOUND THEN
+        RETURN (SELECT secret_key FROM wallets WHERE wallets.user_id = $1);
+    ELSE
+        RETURN 'User not found';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+ALTER FUNCTION get_wallet_secret_key(uuid) OWNER TO postgres;

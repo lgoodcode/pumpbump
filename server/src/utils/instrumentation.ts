@@ -1,7 +1,7 @@
 import * as Sentry from "Sentry";
 
 import { IS_PROD } from "@/constants/index.ts";
-import { env } from "@/utils/index.ts";
+import { env } from "@/utils/env.ts";
 
 // Hack in order to fix `Deno.permissions.querySync` not being defined
 // https://github.com/denoland/deploy_feedback/issues/527

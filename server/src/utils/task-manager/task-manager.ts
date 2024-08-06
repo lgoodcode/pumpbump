@@ -1,206 +1,124 @@
-import { EventEmitter } from "EventEmitter";
-import { captureException } from "Sentry";
+import { captureException, captureMessage } from "Sentry";
 
 import { logger } from "@/utils/logger.ts";
+import {
+  AbstractTaskManager,
+  type Task,
+  type TaskInfo,
+  type TaskManagerConfig,
+  TaskStatus,
+  type TaskSummary,
+} from "@/utils/task-manager/types.ts";
+import {
+  ActionNotFoundError,
+  TaskManagerError,
+  TaskNotFoundDuringRunError,
+  TooManyRunsError,
+} from "@/utils/task-manager/errors.ts";
+import { Ulid } from "@/utils/ulid.ts";
 
-const fakeDatabase = new Map<string, Task>();
-
-type TaskInfo = {
-  userId: string;
-  totalRuns: number;
-  interval: number;
-};
-
-type TaskStatus =
-  | "pending" // Task is waiting to process the next run
-  | "processing" // Task is currently processing one or more runs
-  | "completing" // Task is waiting for processing runs to complete before marking as completed
-  | "completed" // Task has completed all runs
-  | "stopping" // Task is stopping and waiting for processing runs to complete
-  | "stopped" // Task has been stopped
-  | "failing" // Task is failing and waiting for processing runs to complete before marking as failed
-  | "failed"; // Task has failed
-
-type Task = {
-  id: string;
-  userId: string;
-  totalRuns: number;
-  currRun: number;
-  failedRuns: number;
-  completedRuns: number;
-  status: TaskStatus;
-  interval: number;
-  /** Timestamp for the next scheduled run */
-  nextRunTime: number;
-  /**
-   * List of the run index to track if there are runs still processing.
-   * This is to allow tasks to wait until any processing runs finish before
-   * marking it as completed/stopped
-   */
-  processingRuns: Record<number, boolean>;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type TaskSummary = {
-  totalTasks: number;
-  completedTasks: number;
-  failedTasks: number;
-};
-
-class Queue<T> {
-  private items: T[] = [];
-
-  enqueue(item: T): void {
-    this.items.push(item);
+export class TaskManager extends AbstractTaskManager {
+  constructor(config: TaskManagerConfig) {
+    super(config);
   }
 
-  dequeue(): T | undefined {
-    return this.items.shift();
-  }
+  async process(): Promise<void> {
+    while (this._isProcessing) {
+      try {
+        await this.processTask();
+        await new Promise((resolve) => setTimeout(resolve, this._interval));
+      } catch (err: unknown) {
+        const error = err as TaskManagerError;
+        logger.error(error);
+        captureException(error, {
+          extra: { taskId: error.taskId },
+        });
 
-  isEmpty(): boolean {
-    return this.items.length === 0;
-  }
-}
-
-// Stub for Solana transaction
-async function executeSolanaTransaction(): Promise<boolean> {
-  const maxDelay = 5000;
-  await new Promise((resolve) => setTimeout(resolve, Math.random() * maxDelay));
-  return Math.random() > 0.2; // 80% success rate
-}
-
-// Update the database with the result of a task run
-async function saveTaskToDatabase(task: Task, action: string): Promise<void> {
-  // logger.log(`[${action}] Saving task to database: ${JSON.stringify(task)}`);
-  fakeDatabase.set(task.id, { ...task, updatedAt: new Date() });
-  // Sleep random time to simulate database latency
-  await new Promise((resolve) => setTimeout(resolve, Math.random() * 1000));
-}
-
-interface TaskManagerEvents {
-  taskAdded: (task: Task) => void;
-  taskStopping: (task: Task) => void;
-  taskStopped: (task: Task) => void;
-  taskCompleted: (task: Task) => void;
-  taskFailed: (task: Task) => void;
-  runStarted: (task: Task, run: number) => void;
-  runCompleted: (task: Task, run: number, success: boolean) => void;
-  runFailed: (task: Task, run: number, error: Error) => void;
-}
-
-declare interface ITaskManager {
-  on<U extends keyof TaskManagerEvents>(
-    event: U,
-    listener: TaskManagerEvents[U],
-  ): this;
-  emit<U extends keyof TaskManagerEvents>(
-    event: U,
-    ...args: Parameters<TaskManagerEvents[U]>
-  ): boolean;
-}
-
-type TaskManagerOptions = {
-  interval?: number;
-};
-
-export class TaskManager extends (EventEmitter as new () => ITaskManager) {
-  private count = 1;
-  private _tasks: Map<string, Task> = new Map();
-  private _taskQueue: Queue<string> = new Queue<string>();
-  private _isProcessing: boolean = false;
-  /** The delay in-between processing the task queue */
-  private _interval: number = 10;
-  private _processingInterval: number | null = null;
-
-  constructor(options?: TaskManagerOptions) {
-    super();
-    if (options?.interval) {
-      this._interval = options.interval;
+        if (await this.isEmpty()) {
+          this.stopProcessing();
+        }
+      }
     }
+  }
+
+  startProcessing(): void {
+    if (!this._isProcessing) {
+      this._isProcessing = true;
+      this.process();
+    }
+
+    this.emit("processingStarted");
+  }
+
+  stopProcessing(): void {
+    this._isProcessing = false;
+
+    this.emit("processingStopped");
   }
 
   isProcessing(): boolean {
     return this._isProcessing;
   }
 
-  get processingInterval(): number | null {
-    return this._processingInterval;
+  async getTask(taskId: string): Promise<Task | null> {
+    return await this._tasks.get(taskId);
   }
 
-  set processingInterval(interval: number) {
-    if (this._processingInterval !== null) {
-      clearInterval(this._processingInterval);
-    }
-    this._processingInterval = setInterval(
-      () => this.processTask(),
-      interval,
-    );
+  async hasTask(taskId: string): Promise<boolean> {
+    return await this._tasks.has(taskId);
   }
 
-  startProcessing(): void {
-    if (!this._isProcessing) {
-      this._isProcessing = true;
-      this._processingInterval = setInterval(
-        () => this.processTask(),
-        this._interval,
-      );
-    }
+  async isEmpty(): Promise<boolean> {
+    return await this._tasks.isEmpty();
   }
 
-  stopProcessing(): void {
-    if (this._processingInterval !== null) {
-      clearInterval(this._processingInterval);
-      this._processingInterval = null;
-    }
-    this._isProcessing = false;
+  async getTaskKeys(): Promise<string[]> {
+    return await this._tasks.keys();
   }
 
-  getTask(taskId: string): Task | null {
-    return this._tasks.get(taskId) ?? null;
-  }
-
-  hasTask(taskId: string): boolean {
-    return this._tasks.has(taskId);
-  }
-
-  getTaskList(): string[] {
-    return Array.from(this._tasks.keys());
-  }
-
-  getTaskStatus(taskId: string): TaskStatus | null {
-    const task = this._tasks.get(taskId);
+  async getTaskStatus(taskId: string): Promise<TaskStatus | null> {
+    const task = await this._tasks.get(taskId);
     return task ? task.status : null;
   }
 
-  isTaskRunning(taskId: string): boolean {
-    const task = this.getTask(taskId);
-    return !!task &&
-      (task.status === "processing" || task.status === "pending");
+  async isTaskActive(taskOrTaskId: Task | string): Promise<boolean> {
+    const isId = typeof taskOrTaskId === "string";
+    const task = isId ? (await this._tasks.get(taskOrTaskId)) : taskOrTaskId;
+
+    if (!task) {
+      const error = new Error("Task not found");
+      logger.warn(`Task not found: ${taskOrTaskId}`);
+      captureException(error, {
+        extra: {
+          taskId: taskOrTaskId,
+        },
+      });
+      return false;
+    }
+
+    return this.isTaskPendingOrProcessing(task);
   }
 
-  async addTask({ userId, totalRuns, interval }: TaskInfo): Promise<void> {
+  async addTask(
+    { userId, totalRuns, interval, action, params }: TaskInfo,
+  ): Promise<void> {
     const now = Date.now();
     const task: Task = {
-      id: String(this.count++),
+      id: Ulid.generate(),
       userId,
       totalRuns,
-      currRun: 0,
-      failedRuns: 0,
-      completedRuns: 0,
-      status: "pending",
+      status: TaskStatus.Pending,
       interval,
       nextRunTime: now,
-      processingRuns: {},
-      createdAt: new Date(now),
-      updatedAt: new Date(now),
+      action,
+      params,
     };
 
-    this._tasks.set(task.id, task);
-    this._taskQueue.enqueue(task.id);
-
-    await saveTaskToDatabase(task, "ADD");
+    await Promise.all([
+      this._tasks.set(task.id, task),
+      this._taskQueue.enqueue(task.id),
+      this._db.createTask(task),
+    ]);
 
     this.emit("taskAdded", task);
 
@@ -209,34 +127,76 @@ export class TaskManager extends (EventEmitter as new () => ITaskManager) {
     }
   }
 
-  async completeTask(task: Task): Promise<void> {
-    this.finalizeTaskStatus(task);
-    await saveTaskToDatabase(task, "COMPLETE");
+  async completeTask(task: Task, stopped: boolean = false): Promise<void> {
+    if (stopped) {
+      task.status = TaskStatus.Stopped;
+    } else {
+      this.finalizeTaskStatus(task);
+    }
+
+    await Promise.all([
+      this._db.completeTask(task),
+      this._tasks.delete(task.id),
+      this._taskRuns.delete(task.id),
+    ]);
+
     this.emit("taskCompleted", task);
   }
 
-  async stopTask(taskId: string): Promise<void> {
-    const task = this.getTask(taskId);
-    if (task && task.status !== "stopped" && task.status !== "completed") {
-      task.status = "stopping";
-      await saveTaskToDatabase(task, "STOP");
+  async stopTask(
+    taskOrTaskId: Task | string,
+    batchStop: boolean = false,
+  ): Promise<"Task not found" | "Task is not running" | null> {
+    const isId = typeof taskOrTaskId === "string";
+    const task = isId ? (await this.getTask(taskOrTaskId)) : taskOrTaskId;
+
+    if (!task) {
+      return "Task not found";
+    } else if ((await this.isTaskActive(task)) === false) {
+      return "Task is not running";
+    } else {
+      await Promise.allSettled([
+        batchStop
+          ? this._taskRuns.markTaskAsStopping(task.id)
+          : Promise.resolve(),
+        this._tasks.update(task.id, {
+          ...task,
+          status: TaskStatus.Stopping,
+        }),
+        this._db.updateTask(task.id, { status: TaskStatus.Stopping }),
+      ]);
+
+      // Wait for other runs to finish before stopping the task
+      while (await this._taskRuns.hasProcessingRuns(task.id)) {
+        await new Promise((resolve) => setTimeout(resolve, this._interval));
+      }
+      // Don't need to await this since it's handled in the processTaskAsync method
+      this.completeTask(task, true);
+
       this.emit("taskStopping", task);
+
+      return null;
     }
   }
 
   async stopAllTasks(): Promise<void> {
     try {
-      const stopPromises = Array.from(this._tasks.values()).map((task) =>
-        this.stopTask(task.id)
-      );
+      const taskIds = await this._tasks.keys();
+      await this._taskRuns.markTasksAsStopping(taskIds);
+      const stopPromises = taskIds.map((task) => this.stopTask(task, true));
       const results = await Promise.allSettled(stopPromises);
+      const failedStops = results.reduce((acc, result) => {
+        if (result.status === "rejected") {
+          logger.error(result.reason);
+          captureException(result.reason);
+          return acc + 1;
+        }
+        return acc;
+      }, 0);
 
-      const failedStops = results.filter((r) => r.status === "rejected").length;
       if (failedStops > 0) {
         logger.warn(`Failed to stop ${failedStops} tasks`);
       }
-
-      this.stopProcessing();
     } catch (error) {
       logger.error(error);
       captureException(error);
@@ -244,181 +204,247 @@ export class TaskManager extends (EventEmitter as new () => ITaskManager) {
     }
   }
 
-  /**
-   * Checks that the task is eligible to execute another run:
-   *
-   * 1. The number of runs don't exceed
-   * 2. The current status of the task is "pending" or "processing", indicating it isn't
-   * stopping, completed, or has failed
-   */
-  private isTaskEligible(task: Task): boolean {
-    return task.currRun < task.totalRuns &&
-      (task.status === "pending" || task.status === "processing");
+  isTaskPendingOrProcessing(task: Task): boolean {
+    return task.status === TaskStatus.Pending ||
+      task.status === TaskStatus.Processing;
   }
 
-  private isTaskWithinInterval(task: Task): boolean {
+  async isTaskEligible(task: Task): Promise<boolean> {
+    return this.isTaskPendingOrProcessing(task) &&
+      (await this._taskRuns.getTotalRunCount(task.id)) < task.totalRuns;
+  }
+
+  isTaskWithinInterval(task: Task): boolean {
     return task.nextRunTime <= Date.now();
   }
 
-  private isTaskProcessingRuns(task: Task): boolean {
-    return Object.keys(task.processingRuns).length > 0;
+  async isTaskProcessingRuns(task: Task): Promise<boolean> {
+    return await this._taskRuns.hasProcessingRuns(task.id);
   }
 
-  /**
-   * This is invoked after a transaction is completed or failed, to update the task
-   * status to continue processing the next run or mark as completing if all runs are done
-   *
-   * This is important because the task could be updated outside of the run via
-   * stoppage or the rest of the runs have kicked off to mark for completion
-   *
-   * @param task the task to update the status for
-   */
-  private updateTaskStatus(task: Task): void {
-    if (task.status === "processing") {
-      // Check if there are more runs available, otherwise, mark as processing
-      if (task.currRun < task.totalRuns) {
-        task.status = "pending";
-      } else {
-        task.status = "completing";
-      }
-    }
+  async isTaskCompletable(task: Task): Promise<boolean> {
+    return task.status === TaskStatus.Completing &&
+      !(await this.isTaskProcessingRuns(task));
   }
 
-  /**
-   * Set the final status for a task given the current status before finalizing it
-   *
-   * @param task The task to finalize the status for
-   */
-  private finalizeTaskStatus(task: Task): void {
+  finalizeTaskStatus(task: Task): TaskStatus {
     switch (task.status) {
-      case "stopping":
-        task.status = "stopped";
+      case TaskStatus.Stopping:
+        task.status = TaskStatus.Stopped;
         break;
-      case "completing":
-        task.status = "completed";
+      case TaskStatus.Completing:
+        task.status = TaskStatus.Completed;
         break;
       default:
-        task.status = "failed";
+        task.status = TaskStatus.Failed;
         break;
     }
+    return task.status;
   }
 
-  // deno-lint-ignore require-await -- we want this to be async even if it doesn't await anything
-  private async processTask(): Promise<void> {
-    const taskId = this._taskQueue.dequeue();
-    if (!taskId) {
-      if (this._taskQueue.isEmpty()) {
-        logger.info("No tasks to process - stopping");
-        this.stopProcessing();
+  async processTask(): Promise<void> {
+    while (this._activeTasks < this._maxActiveTasks) {
+      const taskId = await this._taskQueue.dequeue();
+      if (!taskId) {
+        if (await this._tasks.isEmpty()) {
+          logger.info("No tasks to process - stopping");
+          this.stopProcessing();
+        }
+        break;
       }
-      return;
-    }
 
-    const task = this.getTask(taskId);
-    if (!task) {
-      throw new Error("Somehow got a task that does not exist");
-    }
+      if (await this._taskRuns.isTaskStopping(taskId)) {
+        return;
+      }
 
-    // Check if the task is eligible and within the interval, then process it
-    if (this.isTaskEligible(task) && this.isTaskWithinInterval(task)) {
-      this.processRun(task);
-      this._taskQueue.enqueue(taskId); // Re-add for next run
-    } else if (!this.isTaskProcessingRuns(task)) {
-      // If the task is not currently processing runs, complete it
-      return this.completeTask(task);
-    } else {
-      // If the task is not eligible but has processing runs, re-add it to the queue
-      this._taskQueue.enqueue(taskId);
+      this._activeTasks++;
+      this.processTaskAsync(taskId).finally(() => {
+        this._activeTasks--;
+      });
     }
   }
 
-  private async processRun(task: Task): Promise<void> {
-    if (!this.isTaskEligible(task)) {
+  async processTaskAsync(taskId: string): Promise<void> {
+    const task = await this.getTask(taskId);
+    if (!task) {
+      logger.warn(`Task not found: ${taskId}`);
+      captureMessage("Task not found", {
+        level: "warning",
+        extra: { taskId },
+      });
+      // Task was removed from the queue but not the task list
+      await this._tasks.delete(taskId);
       return;
     }
 
-    const run = task.currRun++;
-    task.status = "processing";
-    task.nextRunTime = Date.now() + task.interval;
-    task.processingRuns[run] = true;
+    // Only process a task if it's not stopping, eligible, and within the interval
+    if (
+      !(await this._taskRuns.isTaskStopping(task.id)) &&
+      (await this.isTaskEligible(task)) &&
+      this.isTaskWithinInterval(task)
+    ) {
+      await Promise.all([
+        this.processRun(task),
+        this._taskQueue.enqueue(taskId),
+      ]);
+    } else if (await this.isTaskCompletable(task)) {
+      await this.completeTask(task);
+      // If the task is not eligible and not completable, re-add it to the queue
+    } else {
+      await this._taskQueue.enqueue(taskId);
+    }
+  }
 
-    await saveTaskToDatabase(task, "PROCESS");
+  async processRun(task: Task): Promise<void> {
+    if (!(await this.isTaskEligible(task))) {
+      return;
+    }
 
-    this.emit("runStarted", task, run);
+    const runId = Ulid.generate();
+    const runCount = await this._taskRuns.getTotalRunCount(task.id);
+
+    // If it's the first run, update the status to processing
+    if (task.status === TaskStatus.Pending) {
+      task.status = TaskStatus.Processing;
+      this._db.updateTask(task.id, { status: TaskStatus.Processing });
+    } else {
+      if (runCount > task.totalRuns) {
+        const error = new TooManyRunsError(task.id);
+        logger.warn("Task run exceeds total runs", runCount, task.totalRuns);
+        captureException(error, {
+          extra: {
+            taskId: task.id,
+            runId,
+            runCount,
+            totalRuns: task.totalRuns,
+          },
+        });
+        return;
+      }
+    }
+
+    // Update the task in the redis cache and maybe the database before running the action
+    await Promise.all([
+      this._taskRuns.add(task.id, runId, runCount),
+      this._tasks.update(task.id, task),
+    ]);
+
+    this.emit("runStarted", task, runId, runCount);
 
     try {
-      const success = await executeSolanaTransaction();
-      if (success) {
-        task.completedRuns++;
-      } else {
-        task.failedRuns++;
+      const action = this._actions.get(task.action);
+      if (!action) {
+        throw new ActionNotFoundError(
+          task.id,
+          `Action not found: ${task.action}`,
+        );
       }
 
-      this.updateTaskStatus(task);
+      const success = await action(task.params);
+      task = await this.handleRunResult(task, runId, success);
 
-      await saveTaskToDatabase(task, "UPDATE SUCCESS");
-
-      delete task.processingRuns[run];
-
-      this.emit("runCompleted", task, run, success);
+      this.emit("runCompleted", task, runId, runCount, success);
+      // Error handling for the action should be done within the action itself
+      // and return false if it fails. This will handle unexpected errors
     } catch (error) {
-      logger.error(
-        `Solana transaction failed for task ${task.id}, run ${run}:`,
-        error,
-      );
-      captureException(error);
+      captureException(error, {
+        extra: {
+          taskId: task.id,
+          userId: task.userId,
+          runId,
+          runCount,
+        },
+      });
 
-      task.failedRuns++;
-
-      this.updateTaskStatus(task);
-
-      await saveTaskToDatabase(task, "UPDATE ERROR");
-
-      delete task.processingRuns[run];
-
-      this.emit("runFailed", task, run, error);
+      try {
+        task = await this.handleRunResult(task, runId, false);
+        this.emit("runFailed", task, runId, runCount, error);
+      } catch (error) {
+        logger.error(error);
+        captureException(error, {
+          extra: {
+            taskId: task.id,
+            userId: task.userId,
+            runId,
+            runCount,
+          },
+        });
+      }
     }
   }
 
-  getActiveTasks(userId: string): Promise<Task[]> {
-    // In practice, this would be a database query
-    return Promise.resolve(
-      Array.from(fakeDatabase.values()).filter(
-        (task) => task.userId === userId && this.isTaskRunning(task.id),
-      ),
-    );
+  async handleRunResult(
+    task: Task,
+    runId: string,
+    success: boolean,
+  ): Promise<Task> {
+    // Fetch the most up-to-date task from the redis store, in case it was updated
+    // outside of the run
+    const [updatedTask, newRunCount] = await Promise.all([
+      this.getTask(task.id),
+      this._taskRuns.getTotalRunCount(task.id),
+    ]);
+    if (!updatedTask) {
+      throw new TaskNotFoundDuringRunError(task.id);
+    }
+
+    task = updatedTask;
+    // If the task status hasn't changed from processing (e.g. stopping, completing)
+    // and the run count is at or exceeds the total runs, mark as completing
+    if (
+      task.status === TaskStatus.Processing && newRunCount >= task.totalRuns
+    ) {
+      task.status = TaskStatus.Completing;
+    }
+
+    await Promise.all([
+      this._taskRuns.removeRun(task.id, runId),
+      this._tasks.update(task.id, task),
+      this._db.saveRun(task.id, runId, success),
+    ]);
+
+    return task;
   }
 
-  getTaskHistory(
-    userId: string,
-    page: number = 1,
-    pageSize: number = 20,
-  ): Promise<{ tasks: Task[]; totalCount: number }> {
-    const offset = (page - 1) * pageSize;
-    const filteredTasks = Array.from(fakeDatabase.values()).filter(
-      (task) =>
-        task.userId === userId &&
-        !this.isTaskRunning(task.id),
-    );
-    return Promise.resolve({
-      tasks: filteredTasks.slice(offset, offset + pageSize),
-      totalCount: filteredTasks.length,
-    });
-  }
+  // getActiveTasks(userId: string): Promise<Task[]> {
+  //   // In practice, this would be a database query
+  //   return Promise.resolve(
+  //     Array.from(memoryStore.values()).filter(
+  //       (task) => task.userId === userId && this.isTaskRunning(task),
+  //     ),
+  //   );
+  // }
 
-  getUserTaskSummary(userId: string): Promise<TaskSummary> {
-    return Promise.resolve(
-      Array.from(fakeDatabase.values()).reduce(
-        (summary, task) => {
-          if (task.userId === userId) {
-            summary.totalTasks += 1;
-            if (task.status === "completed") summary.completedTasks += 1;
-            else if (task.status === "failed") summary.failedTasks += 1;
-          }
-          return summary;
-        },
-        { totalTasks: 0, completedTasks: 0, failedTasks: 0 },
-      ),
-    );
-  }
+  // getTaskHistory(
+  //   userId: string,
+  //   page: number = 1,
+  //   pageSize: number = 20,
+  // ): Promise<{ tasks: Task[]; totalCount: number }> {
+  //   const offset = (page - 1) * pageSize;
+  //   const filteredTasks = Array.from(memoryStore.values()).filter(
+  //     (task) =>
+  //       task.userId === userId &&
+  //       !this.isTaskRunning(task),
+  //   );
+  //   return Promise.resolve({
+  //     tasks: filteredTasks.slice(offset, offset + pageSize),
+  //     totalCount: filteredTasks.length,
+  //   });
+  // }
+
+  // getUserTaskSummary(userId: string): Promise<TaskSummary> {
+  //   return Promise.resolve(
+  //     Array.from(memoryStore.values()).reduce(
+  //       (summary, task) => {
+  //         if (task.userId === userId) {
+  //           summary.totalTasks += 1;
+  //           if (task.status === "completed") summary.completedTasks += 1;
+  //           else if (task.status === "failed") summary.failedTasks += 1;
+  //         }
+  //         return summary;
+  //       },
+  //       { totalTasks: 0, completedTasks: 0, failedTasks: 0 },
+  //     ),
+  //   );
+  // }
 }

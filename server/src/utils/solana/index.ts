@@ -1,4 +1,3 @@
-import { brightRed, green, red } from "colors";
 import {
   Connection,
   Keypair,
@@ -7,8 +6,10 @@ import {
 } from "@solana/web3.js";
 import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
 import bs58 from "bs58";
+import { captureException } from "Sentry";
 
 import idl from "@/constants/idl.json" with { type: "json" };
+import { PROGRAM_ID } from "@/constants/index.ts";
 import {
   BlockInfo,
   BondingCurveData,
@@ -16,8 +17,8 @@ import {
   ExperimentResult,
   RunResult,
 } from "@/constants/types.ts";
-import { IS_PROD, PROGRAM_ID } from "@/constants/index.ts";
-import { env } from "@/utils/index.ts";
+import { env } from "@/utils/env.ts";
+import { logger } from "@/utils/logger.ts";
 import {
   BlockInfoFetchError,
   InvalidExperiementIntervalError,
@@ -36,8 +37,10 @@ export function sleep(ms: number) {
 
 export function validateSolAddress(address: string) {
   try {
+    console.log("address", address);
     const pubkey = new PublicKey(address);
     return PublicKey.isOnCurve(pubkey.toBuffer());
+    // Ignore the error as we only care if the address is valid
   } catch (_) {
     return false;
   }
@@ -52,7 +55,7 @@ export function getKeypairFromBs58(bs58String: string): Keypair {
     const errorString = bs58String.length > 8
       ? bs58String.substring(0, 8) + "..."
       : bs58String;
-    throw new Error(brightRed(`Invalid Keypair: ${errorString}`));
+    throw new Error(`Invalid Keypair: ${errorString}`);
   }
 }
 
@@ -90,28 +93,16 @@ export function createProgram(connection: Connection, keypair: Keypair) {
  * Checks the environment variables and creates the required connection, keypair,
  * and program for the script to run and returns them.
  */
-export function initializeScript() {
-  const privateKey = env("SIGNER_PRIVATE_KEY");
-  if (!privateKey) {
-    console.log(brightRed("Missing signer keypair"));
-    console.log(brightRed("Please fill it in .env file"));
-    throw new Error("Missing SIGNER_PRIVATE_KEY");
-  }
-
-  const rpcUrl = env("RPC_URL");
-  if (!rpcUrl) {
-    console.log(brightRed("Missing rpc endpoint"));
-    console.log(brightRed("Please fill it in .env file"));
-    throw new Error("Missing rpc endpoint");
-  }
-
-  const connection = new Connection(rpcUrl, "confirmed");
-  const keypair = getKeypairFromBs58(privateKey);
+export function initializeSolana() {
+  const connection = new Connection(env("RPC_URL"), "confirmed");
+  const keypair = getKeypairFromBs58(env("SIGNER_PRIVATE_KEY"));
+  const feeRecipientPubkey = new PublicKey(env("FEE_RECIPIENT_PUBKEY"));
   const program = createProgram(connection, keypair);
 
   return {
     connection,
     keypair,
+    feeRecipientPubkey,
     program,
   };
 }
@@ -142,14 +133,14 @@ export async function createExperiment(
         setTimeout(async () => {
           try {
             if (options?.logText) {
-              console.log(`${options.logText} ${i + 1}`);
+              logger.info(`${options.logText} ${i + 1}`);
             }
 
             const start = performance.now();
             const fee = await experiment();
 
             if (options.logText) {
-              console.log(green(`${options.logText} ${i + 1} fee: ${fee}`));
+              logger.info(`${options.logText} ${i + 1} fee: ${fee}`);
             }
 
             resolve({
@@ -157,8 +148,7 @@ export async function createExperiment(
               time: parseFloat(((performance.now() - start) / 1000).toFixed(2)),
             });
           } catch (error) {
-            // Don't display the stack trace if running in the CLI program
-            console.error(error);
+            logger.error(error);
             resolve(null);
           }
         }, i * interval);
@@ -215,7 +205,7 @@ export const getBondingCurveData = async (
  * @param curveInfo
  * @returns
  */
-export const getPrice = (
+export const calculateTokenToSolPrice = (
   tokenDecimals: number,
   currentPrice: number,
   curveInfo: BondingCurveData,
@@ -224,14 +214,18 @@ export const getPrice = (
     const virtualTokenReserves = curveInfo.virtualTokenReserves;
     const virtualSolReserves = curveInfo.virtualSolReserves;
 
+    // @ts-ignore -- BN can perform math operations
     const adjustedVirtualTokenReserves = virtualTokenReserves /
       10 ** tokenDecimals;
+    // @ts-ignore -- BN can perform math operations
     const adjustedVirtualSolReserves = virtualSolReserves / LAMPORTS_PER_SOL;
 
     const virtualTokenPrice = adjustedVirtualSolReserves /
       adjustedVirtualTokenReserves;
     return virtualTokenPrice;
-  } catch (_) {
+  } catch (error: unknown) {
+    logger.warn("Failed to calculate price", error);
+    captureException(error);
     return currentPrice;
   }
 };
@@ -251,7 +245,7 @@ export async function getBlockInfo(connection: Connection): Promise<BlockInfo> {
         blockHash: hashAndCtx.value.blockhash,
       };
     } catch (error) {
-      console.warn("Failed to fetch block info", error);
+      logger.warn("Failed to fetch block info", error);
     }
 
     await sleep(1000);

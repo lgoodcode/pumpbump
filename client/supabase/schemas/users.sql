@@ -15,7 +15,7 @@ ALTER TABLE public.users OWNER TO postgres;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 CREATE OR REPLACE FUNCTION is_authenticated()
-RETURNS BOOLEAN AS $$
+RETURNS boolean AS $$
 BEGIN
     RETURN auth.uid() IS NOT NULL;
 END;
@@ -27,7 +27,7 @@ ALTER FUNCTION is_authenticated() OWNER TO postgres;
  * Using PERFORM improves performance; it's like SELECT 1 but without returning the value,
  */
 CREATE OR REPLACE FUNCTION is_admin(user_id uuid)
-RETURNS BOOLEAN AS $$
+RETURNS boolean AS $$
 BEGIN
     PERFORM
         FROM public.users
@@ -39,7 +39,7 @@ $$ LANGUAGE plpgsql SECURITY definer;
 ALTER FUNCTION is_admin(uuid) OWNER TO postgres;
 
 CREATE OR REPLACE FUNCTION is_admin()
-RETURNS BOOLEAN AS $$
+RETURNS boolean AS $$
 BEGIN
     PERFORM
         FROM public.users
@@ -62,7 +62,7 @@ CREATE POLICY "Only admins can update users data" ON public.users
 
 -- Function that creates a user in our users table when a new user is created in auth.users
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS trigger AS $$
 BEGIN
     INSERT INTO public.users (id, username, email)
     VALUES (
@@ -82,3 +82,19 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users FOR EACH ROW
     EXECUTE PROCEDURE handle_new_user();
+
+
+CREATE OR REPLACE FUNCTION update_users_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_users_updated_at
+BEFORE UPDATE ON public.users
+FOR EACH ROW
+EXECUTE FUNCTION update_users_updated_at();
+
+ALTER FUNCTION update_users_updated_at() OWNER TO postgres;

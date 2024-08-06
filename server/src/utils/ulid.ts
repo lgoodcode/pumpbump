@@ -1,29 +1,28 @@
-class ULID {
+export class Ulid {
   private static readonly ENCODING = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-  private static readonly ENCODING_LEN = ULID.ENCODING.length;
-  private static readonly TIME_MAX = Math.pow(2, 48) - 1;
+  private static readonly ENCODING_LEN = Ulid.ENCODING.length;
   private static readonly RANDOM_LEN = 16;
 
   private static randomChar(): string {
-    return ULID.ENCODING[Math.floor(Math.random() * ULID.ENCODING_LEN)];
+    return Ulid.ENCODING[Math.floor(Math.random() * Ulid.ENCODING_LEN)];
   }
 
   private static encodeTime(now: number, len: number): string {
     let str = "";
     for (let i = len - 1; i >= 0; i--) {
-      const mod = now % ULID.ENCODING_LEN;
-      str = ULID.ENCODING.charAt(mod) + str;
-      now = (now - mod) / ULID.ENCODING_LEN;
+      const mod = now % Ulid.ENCODING_LEN;
+      str = Ulid.ENCODING.charAt(mod) + str;
+      now = (now - mod) / Ulid.ENCODING_LEN;
     }
     return str;
   }
 
   public static generate(): string {
     const now = Date.now();
-    const time = ULID.encodeTime(now, 10);
+    const time = Ulid.encodeTime(now, 10);
     let random = "";
-    for (let i = 0; i < ULID.RANDOM_LEN; i++) {
-      random += ULID.randomChar();
+    for (let i = 0; i < Ulid.RANDOM_LEN; i++) {
+      random += Ulid.randomChar();
     }
     return time + random;
   }
@@ -35,14 +34,14 @@ class ULID {
     }
 
     // ULID uses a specific set of characters
-    const validChars = new RegExp(`^[${ULID.ENCODING}]+$`);
+    const validChars = new RegExp(`^[${Ulid.ENCODING}]+$`);
     if (!validChars.test(str)) {
       return false;
     }
 
     // The first character of the timestamp (first 10 characters)
     // should not be greater than '7' to stay within 48-bit limit
-    if (ULID.ENCODING.indexOf(str[0]) > ULID.ENCODING.indexOf("7")) {
+    if (Ulid.ENCODING.indexOf(str[0]) > Ulid.ENCODING.indexOf("7")) {
       return false;
     }
 

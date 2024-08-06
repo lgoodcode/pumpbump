@@ -20,7 +20,7 @@
       "Error": {
         "type": "object",
         "properties": {
-          "message": {
+          "error": {
             "type": "string"
           }
         }
@@ -65,10 +65,6 @@
   ],
   "tags": [
     {
-      "name": "auth",
-      "description": "Operations about authentication"
-    },
-    {
       "name": "wallet",
       "description": "Operations about wallets"
     },
@@ -77,24 +73,8 @@
       "description": "Operations about bumps"
     },
     {
-      "name": "pet",
-      "description": "Everything about your Pets",
-      "externalDocs": {
-        "description": "Find out more",
-        "url": "http://swagger.io"
-      }
-    },
-    {
-      "name": "store",
-      "description": "Access to Petstore orders"
-    },
-    {
-      "name": "user",
-      "description": "Operations about user",
-      "externalDocs": {
-        "description": "Find out more about our store",
-        "url": "http://swagger.io"
-      }
+      "name": "test-bump",
+      "description": "Operations about bump testing"
     }
   ],
   "paths": {
@@ -141,7 +121,7 @@
             }
           },
           "500": {
-            "description": "Failed to generate wallet",
+            "description": "An unexpected error occurred",
             "content": {
               "application/json": {
                 "schema": {
@@ -153,9 +133,397 @@
         }
       }
     },
-    "/bump/create/{tokenAddress}": {
+    "/bump/processing": {
+      "get": {
+        "tags": ["bump"],
+        "summary": "Get the processing state of the bump task manager",
+        "description": "Returns the current state of the bump task manager. If there are any bumps currently processing, they will be returned.",
+        "operationId": "getProcessingBumps",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved processing bumps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "processing": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bump/interval": {
+      "get": {
+        "tags": ["bump"],
+        "summary": "Get the interval of the bump task manager",
+        "description": "Returns the current interval of the bump task manager.",
+        "operationId": "getBumpInterval",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bump interval",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "interval": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": ["bump"],
+        "summary": "Set the interval of the bump task manager",
+        "description": "Sets the interval of the bump task manager.",
+        "operationId": "setBumpInterval",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "interval": {
+                    "type": "number"
+                  }
+                },
+                "required": ["interval"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successfully set bump interval",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "interval": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body. See RequestValidationError component.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestValidationError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bump/list": {
+      "get": {
+        "tags": ["bump"],
+        "summary": "Get the list of bump tasks",
+        "description": "Returns the list of bump tasks currently in the task manager.",
+        "operationId": "getBumpList",
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bump list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bump/create": {
+      "post": {
+        "tags": ["bump"],
+        "summary": "Create a new bump task",
+        "description": "Creates a new bump task and adds it to the task manager.",
+        "operationId": "createBumpTask",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "tokenAddress": {
+                    "type": "string"
+                  },
+                  "runs": {
+                    "type": "integer"
+                  },
+                  "interval": {
+                    "type": "number"
+                  },
+                  "amount": {
+                    "type": "number"
+                  },
+                  "slippage": {
+                    "type": "number"
+                  },
+                  "fee": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "userId",
+                  "tokenAddress",
+                  "runs",
+                  "interval",
+                  "amount",
+                  "slippage",
+                  "fee"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successfully created bump task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body. See RequestValidationError component.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestValidationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bump/status/{taskId}": {
+      "get": {
+        "tags": ["bump"],
+        "summary": "Get the status of a bump task",
+        "description": "Returns the status of a bump task.",
+        "operationId": "getBumpTaskStatus",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "description": "ID of bump task to get status for",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved bump task status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bump task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bump/stop/{taskId}": {
+      "post": {
+        "tags": ["bump"],
+        "summary": "Stop a bump task",
+        "description": "Stops a bump task.",
+        "operationId": "stopBumpTask",
+        "parameters": [
+          {
+            "name": "taskId",
+            "in": "path",
+            "description": "ID of bump task to stop",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully stopped bump task"
+          },
+          "400": {
+            "description": "Invalid request body. See RequestValidationError component.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RequestValidationError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Bump task not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bump/stop-all": {
+      "post": {
+        "tags": ["bump"],
+        "summary": "Stop all bump tasks",
+        "description": "Stops all bump tasks.",
+        "operationId": "stopAllBumpTasks",
+        "responses": {
+          "200": {
+            "description": "Successfully stopped all bump tasks"
+          },
+          "500": {
+            "description": "An unexpected error occurred",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test-bump/create/{tokenAddress}": {
+      "post": {
+        "tags": ["test-bump"],
         "summary": "Create a new bump record for a token",
         "description": "Creates a new bump record and records it in the database. This is just the record and doesn't start the process.",
         "operationId": "createBump",

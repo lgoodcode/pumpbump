@@ -1,4 +1,3 @@
-import { brightRed } from "colors";
 import {
   ComputeBudgetProgram,
   Connection,
@@ -17,10 +16,16 @@ import {
 } from "@/constants/index.ts";
 import { PriorityLevel } from "@/constants/types.ts";
 import { TransactionExpiredError } from "@/utils/solana/errors.ts";
-import { env } from "@/utils/index.ts";
+import { env } from "@/utils/env.ts";
+import { logger } from "@/utils/logger.ts";
+
+const HELIUS_API_URL = env("HELIUS_API_URL")!;
+if (!HELIUS_API_URL) {
+  throw new Error("HELIUS_API_URL not set");
+}
 
 /**
- * Calculate the transaction fee in SOL
+ * Calculate the transaction fee in SOL from microLamports and Compute Units (CU)
  *
  * @param microLamports The priority fee in microLamports
  * @param units The Compute Units (CU) consumed by the transaction
@@ -53,7 +58,7 @@ export function calculateTransactionFee(microLamports: number, units: number) {
  * @param units The estimated Compute Units (CU) that will be consumed by the transaction
  * @returns the unit price in microLamports for the priority fee
  */
-export function getPriorityFeeUnitPrice(fee: number, units: number) {
+export function calcPriorityFeeUnitPrice(fee: number, units: number) {
   const feeInMicroLamports = (fee * LAMPORTS_PER_SOL - 5000) *
     MICRO_LAMPORT_PER_LAMPORT;
   return Math.round((feeInMicroLamports - BASE_PRIORITY_FEE_LAMPORTS) / units);
@@ -86,7 +91,7 @@ export async function getOptimalTransactionOptionsFee(
   } else {
     units = (await getComputeUnitsForTransaction(transaction, connection)) ||
       BASE_COMPUTE_UNITS;
-    microLamports = getPriorityFeeUnitPrice(fee, units);
+    microLamports = calcPriorityFeeUnitPrice(fee, units);
   }
 
   return [microLamports, units];
@@ -146,7 +151,7 @@ export async function sendAndConfirmRawTransaction(
 ) {
   const signature = await sendTransaction(connection, transaction);
   if (log) {
-    console.log(`Confirming... https://explorer.solana.com/tx/${signature}`);
+    logger.info(`Confirming... https://explorer.solana.com/tx/${signature}`);
   }
   return await confirmTransaction(connection, signature);
 }
@@ -174,15 +179,17 @@ export async function getComputeUnitsForTransaction(
     newTx.feePayer = tx.feePayer;
     const simulation = await connection.simulateTransaction(
       new VersionedTransaction(newTx.compileMessage()),
+      { sigVerify: false },
     );
 
+    // If the simulation failed, then the required lamports and CU is
+    // greater than what is provided
     if (simulation.value.err) {
-      console.log("Simulation failed", simulation.value.err);
-      return 0;
+      return BASE_COMPUTE_UNITS;
     }
     return simulation.value.unitsConsumed ?? BASE_COMPUTE_UNITS;
   } catch (error) {
-    console.error("Error getting compute units for transaction", error);
+    logger.error("Error getting compute units for transaction", error);
     return BASE_COMPUTE_UNITS;
   }
 }
@@ -192,12 +199,6 @@ export async function getPriorityFeeEstimateForTransaction(
   priorityLevel: PriorityLevel = "veryHigh",
 ) {
   try {
-    const endpoint = env("HELIUS_API_URL") as string;
-
-    if (!endpoint) {
-      throw new Error(brightRed("HELIUS_API_URL not set"));
-    }
-
     const jsonPayload = {
       jsonrpc: "2.0",
       id: "1",
@@ -214,7 +215,7 @@ export async function getPriorityFeeEstimateForTransaction(
         },
       ],
     };
-    const res = await fetch(endpoint, {
+    const res = await fetch(HELIUS_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -226,7 +227,7 @@ export async function getPriorityFeeEstimateForTransaction(
     // Cap the priority fee price to prevent overpaying too much
     return Math.min(Math.floor(fee * 2), MAX_PRIORITY_FEE_MICRO_LAMPORTS);
   } catch (error) {
-    console.error("Error getting priority fee estimate for transaction", error);
+    logger.error("Error getting priority fee estimate for transaction", error);
     return BASE_PRIORITY_FEE_MICRO_LAMPORTS;
   }
 }
