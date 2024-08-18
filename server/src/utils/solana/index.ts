@@ -37,7 +37,6 @@ export function sleep(ms: number) {
 
 export function validateSolAddress(address: string) {
   try {
-    console.log("address", address);
     const pubkey = new PublicKey(address);
     return PublicKey.isOnCurve(pubkey.toBuffer());
     // Ignore the error as we only care if the address is valid

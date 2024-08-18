@@ -29,7 +29,6 @@ export const authentication: MiddlewareHandler = async (ctx, next) => {
   }
 
   const secret = ctx.req.header("Authorization")?.split("Bearer ")[1];
-  console.log("secret", secret);
   if (!secret || env("AUTH_TOKEN") !== secret) {
     logger.error("Unauthorized");
     ctx.status(401);

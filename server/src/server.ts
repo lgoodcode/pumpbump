@@ -27,8 +27,9 @@ try {
   }
 
   app.notFound((ctx) => {
-    logger.warn("Not found", ctx.error);
-    return ctx.json({ error: "Not Found" }, 404);
+    const msg = `Route ${ctx.req.path} not found`;
+    logger.warn(msg, ctx.error);
+    return ctx.json({ error: msg }, 404);
   });
 
   app.onError((error, ctx) => {
