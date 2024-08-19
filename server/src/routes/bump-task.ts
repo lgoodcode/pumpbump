@@ -58,6 +58,7 @@ async function executeBumpTransaction(
   } catch (error) {
     logger.error(error);
     captureException(error, {
+      level: "warning",
       extra: {
         tokenAddress,
         options: {

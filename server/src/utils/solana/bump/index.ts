@@ -40,10 +40,8 @@ import {
 } from "@/utils/solana/index.ts";
 import {
   calculateTransactionFee,
-  confirmTransaction,
   getOptimalTransactionOptionsFee,
   sendAndConfirmRawTransaction,
-  sendTransaction,
 } from "@/utils/solana/transactions.ts";
 import { getBondingCurve, getGlobalState } from "@/utils/solana/pdas.ts";
 import { MissingCreateBumpTransactionOptionsError } from "@/utils/solana/errors.ts";
